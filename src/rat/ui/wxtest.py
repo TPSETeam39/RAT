@@ -3,7 +3,7 @@ import wx.dataview
 
 class WxApp(wx.App):
     def __init__(self):
-        super().__init__(redirect=True)
+        super().__init__(redirect=False)
 
         # wx.Log.SetActiveTarget(wx.LogStderr())
 
@@ -24,32 +24,42 @@ class TestWindow(wx.Frame):
         self.button = wx.Button(self.panel, label="Press me!")
         main_sizer.Add(self.button)
 
-        tree_list = wx.dataview.TreeListCtrl(self.panel)
-        tree_list.SetMinSize((100, 100))
+        self.dataview_list = wx.dataview.DataViewListCtrl(self.panel, style=wx.dataview.DV_ROW_LINES | wx.dataview.DV_MULTIPLE)
+        self.dataview_list.SetMinSize((500, 200))
 
-        tree_list.AppendColumn("A", width=100)
-        tree_list.AppendColumn("B", width=100)
-        tree_list.AppendColumn("C", width=100)
-
-        tree_list.AppendItem(tree_list.GetRootItem(), "Hi")
-        tree_list.AppendItem(tree_list.GetRootItem(), "Hi")
+        self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_ACTIVATED, self.on_dataview_item_activated, self.dataview_list)
+        self.Bind(wx.EVT_CONTEXT_MENU, self.on_context_menu, self.dataview_list)
+        self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.on_context_menu, self.dataview_list)
         
-        main_sizer.Add(tree_list, 1, wx.EXPAND | wx.ALL)
+        self.dataview_list.AppendTextColumn("Last Name", mode=wx.dataview.DATAVIEW_CELL_EDITABLE, flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
+        self.dataview_list.AppendTextColumn("First Name", mode=wx.dataview.DATAVIEW_CELL_EDITABLE, flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
+        self.dataview_list.AppendColumn(wx.dataview.DataViewColumn("Gender", wx.dataview.DataViewChoiceRenderer(["Non-Binary", "Male", "Female"]), self.dataview_list.GetColumnCount(), flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE))
+        self.dataview_list.AppendColumn(wx.dataview.DataViewColumn("Veto", wx.dataview.DataViewChoiceRenderer(["", "Non-Binary", "Male", "Female", "Non-Binary, Male", "Non-Binary, Female", "Male, Female"]), self.dataview_list.GetColumnCount(), flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE))
 
-        list = wx.ListCtrl(self.panel, style=wx.LC_REPORT)
-        list.InsertColumn(0, "A", width=100)
-        list.InsertColumn(1, "B", width=100)
-        list.InsertColumn(2, "C", width=100)
+        self.dataview_list.AppendItem(["A", "A", "Male", ""])
+        self.dataview_list.AppendItem(["B", "B", "Male", ""])
+        self.dataview_list.AppendItem(["C", "C", "Male", ""])
+        self.dataview_list.AppendItem(["D", "D", "Male", ""])
+        self.dataview_list.AppendItem(["E", "E", "Male", ""])
+        self.dataview_list.AppendItem(["F", "F", "Male", ""])
+        self.dataview_list.AppendItem(["G", "G", "Female", ""])
 
-        list.InsertItem(0, "Hi")
-        list.SetItem(0, 1, "Hi")
-        list.SetItem(0, 2, "Hi")
-
-        list.InsertItem(1, "Bye")
-        list.SetItem(1, 1, "Bye")
-        list.SetItem(1, 2, "Bye")
-
-        main_sizer.Add(list)
+        main_sizer.Add(self.dataview_list)
 
         self.panel.SetSizerAndFit(main_sizer)
         self.Fit()
+    
+    def on_dataview_item_activated(self, event: wx.dataview.DataViewEvent):
+        print("on_dataview_item_activated")
+        item = event.GetItem()
+        column = event.GetDataViewColumn()
+        if column:
+            print(column)
+            self.dataview_list.EditItem(item, column)
+    
+    def on_context_menu(self, event: wx.dataview.DataViewEvent):
+        print("on_context_menu")
+
+        menu = wx.Menu()
+        menu.Append(0, "test")
+        self.PopupMenu(menu, event.GetPosition())
