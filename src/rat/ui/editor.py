@@ -1,25 +1,183 @@
+from enum import Enum, auto
+from dataclasses import dataclass
+from typing import Any, Optional
+from itertools import combinations
+
 import wx
 import wx.dataview
+
+class Gender(Enum):
+    FEMALE = auto()
+    MALE = auto()
+    NON_BINARY = auto()
+
+
+@dataclass
+class Student:
+    id: Optional[int]
+    last_name: str
+    first_name: str
+    gender: Gender
+    vetos: set[Gender]
+
+
+# look at the wxWidgets dataview sample to understand this shit
+class StudentInfoDataViewModel(wx.dataview.DataViewModel):
+    COL_ID = 0
+    COL_LAST_NAME = 1
+    COL_FIRST_NAME = 2
+    COL_GENDER = 3
+    COL_VETOS = 4
+
+    GENDER_MAP = {
+        Gender.FEMALE: "Female",
+        Gender.MALE: "Male",
+        Gender.NON_BINARY: "Non-Binary"
+    }
+
+    LIST_SEP = ", "
+
+    def __init__(self):
+        super().__init__()
+
+        self.students: dict[Student] = {}
+        self.next_id = 0
+
+        self.inv_gender_map = {v: k for k, v in self.GENDER_MAP.items()}
+
+    def IsContainer(self, item: wx.dataview.DataViewItem) -> bool:
+        # only the root node is a container because this is a list
+        if not item.IsOk(): # root node
+            return True
+
+        return False
+    
+    def GetParent(self, item: wx.dataview.DataViewItem) -> wx.dataview.DataViewItem:
+        return wx.dataview.DataViewItem(0)
+    
+    def GetChildren(self, item: wx.dataview.DataViewItem, children: list[wx.dataview.DataViewItem]) -> int:
+        if not item.IsOk(): # root node
+            for id in self.students.keys():
+                children.append(self.student_id_to_dv_item(id))
+            return len(self.students)
+
+        return 0
+    
+    def GetValue(self, item: wx.dataview.DataViewItem, col: int) -> Any:
+        id = self.dv_item_to_student_id(item)
+        student: Student = self.students[id]
+
+        match col:
+            case self.COL_ID:
+                return str(student.id)
+            case self.COL_LAST_NAME:
+                return student.last_name
+            case self.COL_FIRST_NAME:
+                return student.first_name
+            case self.COL_GENDER:
+                return self.GENDER_MAP[student.gender]
+            case self.COL_VETOS:
+                return self.vetos_to_string(student.vetos)
+            case _:
+                raise Exception("invalid column")
+    
+    def SetValue(self, variant: Any, item: wx.dataview.DataViewItem, col: int) -> bool:
+        id = self.dv_item_to_student_id(item)
+
+        match col:
+            case self.COL_ID:
+                raise Exception("id cannot be set")
+            case self.COL_LAST_NAME:
+                self.students[id].last_name = variant
+            case self.COL_FIRST_NAME:
+                self.students[id].first_name = variant
+            case self.COL_GENDER:
+                self.students[id].gender = self.inv_gender_map[variant]
+            case self.COL_VETOS:
+                self.students[id].vetos = self.vetos_from_string(variant)
+            case _:
+                raise Exception("invalid column")
+        
+        return True
+    
+    def vetos_to_string(self, vetos: set[Gender]) -> str:
+        return self.LIST_SEP.join([f"{self.GENDER_MAP[v]}" for v in vetos])
+
+    def vetos_from_string(self, string: str) -> set[Gender]:
+        vetos = set()
+        for veto in string.split(self.LIST_SEP):
+            vetos.add(self.inv_gender_map[veto])
+        return vetos
+
+    def student_id_to_dv_item(self, id: int) -> wx.dataview.DataViewItem:
+        # id is incremented by one because 0 represents an invalid node
+        return wx.dataview.DataViewItem(id + 1)
+    
+    def student_to_dv_item(self, student: Student) -> wx.dataview.DataViewItem:
+        return self.student_id_to_dv_item(student.id)
+    
+    def dv_item_to_student_id(self, item: wx.dataview.DataViewItem) -> int:
+        if not item.IsOk():
+            return None
+
+        return int(item.ID) - 1
+    
+    def get_gender_choices(self) -> list[str]:
+        return list(self.GENDER_MAP.values())
+
+    def get_vetos_choices(self) -> list[str]:
+        choices = []
+        choices.extend(self.get_gender_choices())
+        for pair in combinations(self.GENDER_MAP, 2):
+            choices.append(self.vetos_to_string(pair))
+        return choices
+
+    def add_student(self, student: Student) -> int:
+        if student.id in self.students:
+            raise Exception(f"student with id {student.id} already exists")
+        
+        if not student.id:
+            student.id = self.next_id
+        
+        if student.id >= self.next_id:
+            self.next_id = student.id + 1
+
+        self.students[student.id] = student
+
+        self.ItemAdded(wx.dataview.DataViewItem(0), self.student_to_dv_item(student))
+        return student.id
+    
+    def remove_student_by_id(self, id: int) -> None:
+        if id not in self.students:
+            raise Exception(f"student with id {id} not found")
+
+        del self.students[id]
+
+        self.ItemDeleted(wx.dataview.DataViewItem(0), self.student_id_to_dv_item(id))
+    
+    def get_students(self) -> list[Student]:
+        return self.students.values()
+
 
 class StudentInfoEditorPanel(wx.Panel):
     def __init__(self, parent: wx.Window):
         super().__init__(parent)
 
+        self.temp = 0
+
         top_sizer = wx.BoxSizer(orient=wx.VERTICAL)
 
-        self.list = wx.dataview.DataViewListCtrl(self, style=wx.dataview.DV_ROW_LINES | wx.dataview.DV_MULTIPLE)
+        self.model = StudentInfoDataViewModel()
+        self.dv = wx.dataview.DataViewCtrl(self, style=wx.dataview.DV_ROW_LINES | wx.dataview.DV_MULTIPLE)
 
-        self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_ACTIVATED, self.on_dataview_item_activated, self.list)
-        self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.on_context_menu, self.list)
-        # self.Bind(wx.EVT_CONTEXT_MENU, self.on_context_menu, self.list)
+        self.dv.AssociateModel(self.model)
+        self.dv.AppendTextColumn("ID", StudentInfoDataViewModel.COL_ID)
+        self.dv.AppendColumn(StudentInfoEditorPanel.make_text_column("Last Name", StudentInfoDataViewModel.COL_LAST_NAME))
+        self.dv.AppendColumn(StudentInfoEditorPanel.make_text_column("First Name", StudentInfoDataViewModel.COL_FIRST_NAME))
+        self.dv.AppendColumn(StudentInfoEditorPanel.make_choice_column("Gender", self.model.get_gender_choices(), StudentInfoDataViewModel.COL_GENDER))
+        self.dv.AppendColumn(StudentInfoEditorPanel.make_choice_column("Vetos", self.model.get_vetos_choices(), StudentInfoDataViewModel.COL_VETOS))
 
-        self.list.AppendTextColumn("ID", flags=wx.dataview.DATAVIEW_COL_HIDDEN)
-        self.list.AppendTextColumn("Last Name", mode=wx.dataview.DATAVIEW_CELL_EDITABLE, flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
-        self.list.AppendTextColumn("First Name", mode=wx.dataview.DATAVIEW_CELL_EDITABLE, flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
-        self.list.AppendColumn(wx.dataview.DataViewColumn("Gender", wx.dataview.DataViewChoiceRenderer(["Non-Binary", "Male", "Female"]), self.list.GetColumnCount(), flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE))
-        self.list.AppendColumn(wx.dataview.DataViewColumn("Veto", wx.dataview.DataViewChoiceRenderer(["", "Non-Binary", "Male", "Female", "Non-Binary, Male", "Non-Binary, Female", "Male, Female"]), self.list.GetColumnCount(), flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE))
-
-        top_sizer.Add(self.list, 1, wx.EXPAND | wx.ALL, 5)
+        top_sizer.Add(self.dv, 1, wx.EXPAND | wx.ALL, 5)
 
         button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
 
@@ -29,56 +187,65 @@ class StudentInfoEditorPanel(wx.Panel):
         button_delete = wx.Button(self, id=wx.ID_DELETE, label="Delete")
         button_sizer.Add(button_delete)
 
-        self.Bind(wx.EVT_BUTTON, self.on_button)
-
         top_sizer.Add(button_sizer, flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(top_sizer)
-    
-    def add_student(self, id: int, last_name: str, first_name: str, gender: str) -> None:
-        self.list.AppendItem([
-            str(id),
-            last_name,
-            first_name,
-            gender,
-            ""
-        ])
 
-    def load_test_data(self):
-        self.add_student(0, "A", "A", "Non-Binary")
-        self.add_student(1, "B", "B", "Male")
-        self.add_student(2, "C", "C", "Female")
+        self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_ACTIVATED, self.on_dataview_item_activated, self.dv)
+        self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.on_context_menu, self.dv)
+        wx.dataview.EVT_DATAVIEW_ITEM_VALUE_CHANGED
+        self.Bind(wx.EVT_CONTEXT_MENU, self.on_context_menu, self.dv)
+
+        self.Bind(wx.EVT_BUTTON, self.on_button)
+    
+    def make_text_column(title: str, model_column: int) -> wx.dataview.DataViewColumn:
+        return wx.dataview.DataViewColumn(title, wx.dataview.DataViewTextRenderer(mode=wx.dataview.DATAVIEW_CELL_EDITABLE), model_column, width=120, flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
+
+    def make_choice_column(title: str, choices: list[str], model_column: int) -> wx.dataview.DataViewColumn:
+        return wx.dataview.DataViewColumn(title, wx.dataview.DataViewChoiceRenderer(choices), model_column, width=120, flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
+
+    def add_student(self, student: Student) -> int:
+        return self.model.add_student(student)
+    
+    def remove_student_by_id(self, id: int) -> None:
+        self.model.remove_student_by_id(id)
+    
+    def get_selections(self) -> list[int]:
+        return [self.model.dv_item_to_student_id(item) for item in self.dv.Selections]
+    
+    def remove_selection(self) -> None:
+        for id in self.get_selections():
+            self.model.remove_student_by_id(id)
     
     def on_dataview_item_activated(self, event: wx.dataview.DataViewEvent):
-        print("on_dataview_item_activated")
         item = event.GetItem()
         column = event.GetDataViewColumn()
         if column:
-            print(column)
-            self.list.EditItem(item, column)
+            self.dv.EditItem(item, column)
     
     def on_button(self, event: wx.Event):
-        print("on_button")
-        if event.Id == wx.ID_ADD:
-            self.add_student(0, "?", "?", "")
-        elif event.Id == wx.ID_DELETE:
-            for item in self.list.Selections:
-                self.list.DeleteItem(self.list.ItemToRow(item))
+        match event.Id:
+            case wx.ID_ADD:
+                student = Student(None, "?", "?", Gender.NON_BINARY, set())
+                id = self.add_student(student)
 
-    def on_menu(self, event: wx.MenuEvent, dv_item: wx.dataview.DataViewItem):
-        print("on_menu")
-        if event.Id == wx.ID_DELETE:
-            print("delete")
-            # self.list.DeleteItem(self.list.ItemToRow(dv_item))
-            for item in self.list.Selections:
-                self.list.DeleteItem(self.list.ItemToRow(item))
+                self.dv.EditItem(self.model.student_id_to_dv_item(id), self.dv.GetColumn(1))
+            case wx.ID_DELETE:
+                self.remove_selection()
+            case _:
+                raise Exception("invalid button")
+
+    def on_menu(self, event: wx.MenuEvent, id: Optional[int]):
+        match event.Id:
+            case wx.ID_DELETE:
+                self.remove_selection()
+            case _:
+                raise Exception("invalid menu item")
 
     def on_context_menu(self, event: wx.dataview.DataViewEvent):
-        print("on_context_menu")
-
-        item = event.Item
+        id = self.model.dv_item_to_student_id(event.Item)
 
         menu = wx.Menu()
         menu.Append(wx.ID_DELETE, "&Delete")
-        menu.Bind(wx.EVT_MENU, lambda event, dv_item=item: self.on_menu(event, dv_item))
+        menu.Bind(wx.EVT_MENU, lambda event, id=id: self.on_menu(event, id))
         self.PopupMenu(menu, event.GetPosition())
