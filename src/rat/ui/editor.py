@@ -104,6 +104,9 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
         return self.LIST_SEP.join([f"{self.GENDER_MAP[v]}" for v in vetos])
 
     def vetos_from_string(self, string: str) -> set[Gender]:
+        if not string:
+            return set()
+
         vetos = set()
         for veto in string.split(self.LIST_SEP):
             vetos.add(self.inv_gender_map[veto])
@@ -126,7 +129,7 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
         return list(self.GENDER_MAP.values())
 
     def get_vetos_choices(self) -> list[str]:
-        choices = []
+        choices = [""]
         choices.extend(self.get_gender_choices())
         for pair in combinations(self.GENDER_MAP, 2):
             choices.append(self.vetos_to_string(pair))
