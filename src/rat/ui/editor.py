@@ -1,10 +1,12 @@
 from enum import Enum, auto
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, override
 from itertools import combinations
 
 import wx
 import wx.dataview
+from wx import BoxSizer
+
 
 class Gender(Enum):
     FEMALE = auto()
@@ -45,16 +47,19 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
 
         self.inv_gender_map = {v: k for k, v in self.GENDER_MAP.items()}
 
+    @override
     def IsContainer(self, item: wx.dataview.DataViewItem) -> bool:
         # only the root node is a container because this is a list
         if not item.IsOk(): # root node
             return True
 
         return False
-    
+
+    @override
     def GetParent(self, item: wx.dataview.DataViewItem) -> wx.dataview.DataViewItem:
         return wx.dataview.DataViewItem(0)
-    
+
+    @override
     def GetChildren(self, item: wx.dataview.DataViewItem, children: list[wx.dataview.DataViewItem]) -> int:
         if not item.IsOk(): # root node
             for id in self.students.keys():
@@ -62,7 +67,8 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
             return len(self.students)
 
         return 0
-    
+
+    @override
     def GetValue(self, item: wx.dataview.DataViewItem, col: int) -> Any:
         id = self.dv_item_to_student_id(item)
         student: Student = self.students[id]
@@ -80,7 +86,8 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
                 return self.vetos_to_string(student.vetos)
             case _:
                 raise Exception("invalid column")
-    
+
+    @override
     def SetValue(self, variant: Any, item: wx.dataview.DataViewItem, col: int) -> bool:
         id = self.dv_item_to_student_id(item)
 
@@ -99,7 +106,7 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
                 raise Exception("invalid column")
         
         return True
-    
+
     def vetos_to_string(self, vetos: set[Gender]) -> str:
         return self.LIST_SEP.join([f"{self.GENDER_MAP[v]}" for v in vetos])
 
@@ -115,7 +122,7 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
     def student_id_to_dv_item(self, id: int) -> wx.dataview.DataViewItem:
         # id is incremented by one because 0 represents an invalid node
         return wx.dataview.DataViewItem(id + 1)
-    
+
     def student_to_dv_item(self, student: Student) -> wx.dataview.DataViewItem:
         return self.student_id_to_dv_item(student.id)
     
@@ -174,12 +181,11 @@ class StudentInfoEditorPanel(wx.Panel):
         self.dv = wx.dataview.DataViewCtrl(self, style=wx.dataview.DV_ROW_LINES | wx.dataview.DV_MULTIPLE)
 
         self.dv.AssociateModel(self.model)
-        self.dv.AppendTextColumn("ID", StudentInfoDataViewModel.COL_ID)
-        self.dv.AppendColumn(StudentInfoEditorPanel.make_text_column("Last Name", StudentInfoDataViewModel.COL_LAST_NAME))
-        self.dv.AppendColumn(StudentInfoEditorPanel.make_text_column("First Name", StudentInfoDataViewModel.COL_FIRST_NAME))
-        self.dv.AppendColumn(StudentInfoEditorPanel.make_choice_column("Gender", self.model.get_gender_choices(), StudentInfoDataViewModel.COL_GENDER))
-        self.dv.AppendColumn(StudentInfoEditorPanel.make_choice_column("Vetos", self.model.get_vetos_choices(), StudentInfoDataViewModel.COL_VETOS))
+        self.append_columns()
+        self.initialize_sizer_then_fit(top_sizer)
+        self.initialize_bindings()
 
+    def initialize_sizer_then_fit(self, top_sizer: BoxSizer):
         top_sizer.Add(self.dv, 1, wx.EXPAND | wx.ALL, 5)
 
         button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
@@ -194,13 +200,29 @@ class StudentInfoEditorPanel(wx.Panel):
 
         self.SetSizerAndFit(top_sizer)
 
+    def initialize_bindings(self):
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_ACTIVATED, self.on_dataview_item_activated, self.dv)
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.on_context_menu, self.dv)
         wx.dataview.EVT_DATAVIEW_ITEM_VALUE_CHANGED
         self.Bind(wx.EVT_CONTEXT_MENU, self.on_context_menu, self.dv)
-
         self.Bind(wx.EVT_BUTTON, self.on_button)
-    
+
+    def append_columns(self):
+        self.dv.AppendTextColumn("ID",
+                                 StudentInfoDataViewModel.COL_ID)
+        self.dv.AppendColumn(
+            StudentInfoEditorPanel.make_text_column("Last Name", StudentInfoDataViewModel.COL_LAST_NAME))
+        self.dv.AppendColumn(
+            StudentInfoEditorPanel.make_text_column("First Name", StudentInfoDataViewModel.COL_FIRST_NAME))
+        self.dv.AppendColumn(
+            StudentInfoEditorPanel.make_choice_column("Gender",
+                                                      self.model.get_gender_choices(),
+                                                      StudentInfoDataViewModel.COL_GENDER))
+        self.dv.AppendColumn(
+            StudentInfoEditorPanel.make_choice_column("Vetos",
+                                                            self.model.get_vetos_choices(),
+                                                            StudentInfoDataViewModel.COL_VETOS))
+
     def make_text_column(title: str, model_column: int) -> wx.dataview.DataViewColumn:
         return wx.dataview.DataViewColumn(title, wx.dataview.DataViewTextRenderer(mode=wx.dataview.DATAVIEW_CELL_EDITABLE), model_column, width=120, flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
 
