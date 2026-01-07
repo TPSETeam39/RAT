@@ -1,5 +1,6 @@
 import wx
 
+
 class TestFrame(wx.Frame):
     def __init__(self, *args, **kw):
         super(TestFrame, self).__init__(*args, **kw)
@@ -13,6 +14,7 @@ def main():
     frm = TestFrame(None, title="Hi")
     frm.Show()
     app.MainLoop()
+
 
 if __name__ == "__main__":
     main()
