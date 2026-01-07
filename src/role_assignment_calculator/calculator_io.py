@@ -1,6 +1,9 @@
 from enum import StrEnum
 from dataclasses import dataclass, field
 
+from scipy.stats import studentized_range
+
+
 class Genders(StrEnum):
     NON_BINARY = 'NON-BINARY'
     MALE = 'MALE'
@@ -16,20 +19,20 @@ class Role:
         self.gender = gender
         self.dependent_roles = set([]) if dependent_roles is None else {dependent_roles}
 
-@dataclass
 class Student:
     """
     This class represents a single student from the input table.
     Every student prefers gender-neutral roles by default.
     """
-    student: str
-    vetoed_genders: set[Genders]
-    preferred_gender: set[Genders] = field(default_factory=lambda: {Genders.NEUTRAL})
+    def __init__(self, student_name: str, vetoed_genders: set[Genders], preferred_gender: set[Genders]):
+        self.student_name = student_name
+        self.vetoed_genders = vetoed_genders
+        self.preferred_gender = preferred_gender
 
-@dataclass
 class RoleAssignment:
     """
     This class represents a single assignment of a student to a role.
     """
-    student: str
-    assigned_role: str
+    def __init__(self, student: str, assigned_role: str):
+        self.student_name = student
+        self.assigned_role_name = assigned_role
