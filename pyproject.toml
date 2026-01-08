@@ -8,6 +8,10 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "black>=25.12.0",
+    "pre-commit>=4.5.1",
+    "python-sat>=1.8.dev26",
+    "scipy>=1.16.3",
     "wxpython>=4.2.4",
 ]
 
