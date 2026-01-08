@@ -5,9 +5,8 @@ from itertools import combinations
 
 import wx
 import wx.dataview
-from wx import BoxSizer
 
-
+# eventually move data structures to UI/backend code interface
 class Gender(Enum):
     FEMALE = auto()
     MALE = auto()
@@ -42,7 +41,7 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
     def __init__(self):
         super().__init__()
 
-        self.students: dict[Student] = {}
+        self.students: dict[int, Student] = {}
         self.next_id = 0
 
         self.inv_gender_map = {v: k for k, v in self.GENDER_MAP.items()}
@@ -173,19 +172,17 @@ class StudentInfoEditorPanel(wx.Panel):
     def __init__(self, parent: wx.Window):
         super().__init__(parent)
 
-        self.temp = 0
-
-        top_sizer = wx.BoxSizer(orient=wx.VERTICAL)
-
         self.model = StudentInfoDataViewModel()
         self.dv = wx.dataview.DataViewCtrl(self, style=wx.dataview.DV_ROW_LINES | wx.dataview.DV_MULTIPLE)
-
         self.dv.AssociateModel(self.model)
         self.append_columns()
-        self.initialize_sizer_then_fit(top_sizer)
-        self.initialize_bindings()
+        
+        self.init_layout()
+        self.bind_event_handlers()
 
-    def initialize_sizer_then_fit(self, top_sizer: BoxSizer):
+    def init_layout(self):
+        top_sizer = wx.BoxSizer(orient=wx.VERTICAL)
+
         top_sizer.Add(self.dv, 1, wx.EXPAND | wx.ALL, 5)
 
         button_sizer = wx.BoxSizer(orient=wx.HORIZONTAL)
@@ -200,11 +197,11 @@ class StudentInfoEditorPanel(wx.Panel):
 
         self.SetSizerAndFit(top_sizer)
 
-    def initialize_bindings(self):
+    def bind_event_handlers(self):
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_ACTIVATED, self.on_dataview_item_activated, self.dv)
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.on_context_menu, self.dv)
-        wx.dataview.EVT_DATAVIEW_ITEM_VALUE_CHANGED
         self.Bind(wx.EVT_CONTEXT_MENU, self.on_context_menu, self.dv)
+
         self.Bind(wx.EVT_BUTTON, self.on_button)
 
     def append_columns(self):
