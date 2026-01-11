@@ -1,9 +1,8 @@
-from typing import Tuple
-
+from pysat.card import CardEnc, EncType
 from pysat.formula import IDPool, CNFPlus
 from pysat.solvers import Solver
 
-from .calculator_io import Role, Student, RoleAssignment
+from .calculator_io import Role, Student, RoleAssignment, RoleCouplingGraph
 from .genders import Gender
 
 
@@ -16,8 +15,15 @@ def parse_role_name_from_assignment(assignment: str) -> str:
 
 
 class Calculator:
-    def __init__(self, roles: set[Role], students: set[Student]):
+    def __init__(
+        self,
+        roles: set[Role],
+        students: set[Student],
+        role_couplings: RoleCouplingGraph = None,
+        essential_roles: set[Role] = None,
+    ):
         self.roles = roles
+        self.essential_roles = set([]) if essential_roles is None else essential_roles
         self.students = students
         self.variable_pool = IDPool()
         self._fill_variable_pool(roles, students)
@@ -32,6 +38,10 @@ class Calculator:
         self.cnf = CNFPlus()
         self._every_student_has_exactly_one_role()
         self._students_have_pairwise_different_roles()
+        if role_couplings is not None:
+            self._set_role_couplings(role_couplings)
+        if essential_roles is not None:
+            self._enforce_esesntial_roles(essential_roles)
 
     def _fill_variable_pool(self, roles: set[Role], students: set[Student]):
         for s in students:
@@ -42,21 +52,28 @@ class Calculator:
         return self.variable_pool.id((s, r))
 
     def _every_student_has_exactly_one_role(self):
+        """
+        Extends the CNF formula with clauses, which state that
+        every student must have exactly one role.
+        """
         for student in self.students:
             relevant_variables = []
             for role in self.roles:
                 relevant_variables.append(self._student_has_role(student, role))
-            self.cnf.append(relevant_variables)  # Every student has at least one role
-            self.cnf.append(
-                [relevant_variables, 1], is_atmost=True
-            )  # Every student has at most one role
+            self.cnf.extend(
+                CardEnc.equals(lits=relevant_variables, encoding=EncType.pairwise)
+            )
 
     def _students_have_pairwise_different_roles(self):
+        """
+        Extends the CNF formula with clauses, which state that
+        the roles of students must be pairwise different.
+        """
         for this_role in self.roles:
             for this_student in self.students:
                 for other_student in self.students:
                     if this_student != other_student:
-                        # this_student has this_role --> not(other_student has this role)
+                        # this_student has this_role implies not(other_student has this role)
                         self.cnf.append(
                             [
                                 -1 * self._student_has_role(this_student, this_role),
@@ -65,6 +82,11 @@ class Calculator:
                         )
 
     def _take_gender_vetoes_into_account(self):
+        """
+        Generates the assumptions (a list of literals), which bans
+        a student from taking over the role of a certain gender.
+        :return: a list of literals, which represent all the students' vetoes.
+        """
         output = []
         for this_student in self.students:
             for vetoed_gender in this_student.vetoed_genders:
@@ -74,10 +96,45 @@ class Calculator:
                     )
         return output
 
+    def _set_role_couplings(self, role_couplings: RoleCouplingGraph):
+        """
+        Extends the CNF formula with clauses, which state that given roles are coupled to one another other.
+        """
+        for role in role_couplings.map.keys():
+            for coupled_role in role_couplings.map[role]:
+                self._couple_roles(role, coupled_role)
+
+    def _couple_roles(self, role: Role, coupled_role: Role):
+        """
+        Extends the CNF formula with clauses, which couple the roles.
+        """
+        # Either role is not occupied by this_student or coupled_role is occupied by at least one student
+        for this_student in self.students:
+            relevant_variables = []
+            for other_student in self.students:
+                if this_student != other_student:
+                    relevant_variables.append(
+                        self._student_has_role(other_student, coupled_role)
+                    )
+            self.cnf.append(
+                [-1 * self._student_has_role(this_student, role)] + relevant_variables
+            )
+
+    def _enforce_esesntial_roles(self, essential_roles):
+        for role in essential_roles:
+            relevant_variables = []
+            for student in self.students:
+                relevant_variables.append(self._student_has_role(student, role))
+            self.cnf.append(relevant_variables)
+
     def calculate_role_assignments(self) -> set[RoleAssignment]:
         if len(self.students) > len(self.roles):
             raise RuntimeError(
                 "There are more roles than students! An assignment is obviously impossible!"
+            )
+        if len(self.essential_roles) > len(self.students):
+            raise RuntimeError(
+                "There are more essential roles than students! An assignment is obviously impossible!"
             )
         with Solver(name="glucose3", bootstrap_with=self.cnf.clauses) as solver:
             sat = solver.solve(assumptions=self._take_gender_vetoes_into_account())

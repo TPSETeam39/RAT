@@ -1,3 +1,5 @@
+from typing import Tuple, Dict
+
 from .genders import Gender, GenderVetoOption, get_set_from_gender_veto_option
 
 
@@ -66,10 +68,29 @@ class RoleAssignment:
         return hash((self.student, self.assigned_role))
 
 
-class RoleDependencyGraph:
+class RoleCouplingGraph:
     """
-    This class represents the dependencies between roles through a directed graph.
+    This class represents the dependencies between roles through an undirected graph.
+
+    A 'coupling' in this case means that a role can only be taken by at least one student,
+    if all the roles, to which said role is coupled, are also taken by at least one student, and vice versa.
+
+    This undirected graph is saved as a dictionary, where the key is a role and the value is a set of roles, to which
+    said role is coupled.
     """
 
-    def __init__(self, nodes, dependencies):
-        pass
+    def __init__(self, couplings: list[Tuple[Role, Role]]):
+        self.map = self._get_graph_map(couplings)
+
+    def _get_graph_map(self, couplings: list[Tuple[Role, Role]]):
+        graph_map: Dict[Role, set[Role]] = dict()
+        for role1, role2 in couplings:
+            if role1 not in graph_map.keys():
+                graph_map[role1] = {role2}
+            else:
+                graph_map[role1].add(role2)
+            if role2 not in graph_map.keys():
+                graph_map[role2] = {role1}
+            else:
+                graph_map[role2].add(role1)
+        return graph_map

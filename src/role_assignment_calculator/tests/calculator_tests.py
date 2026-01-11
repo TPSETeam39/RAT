@@ -41,9 +41,9 @@ class TestCalculator(unittest.TestCase):
         role_assignments = calculator.calculate_role_assignments()
 
         # THEN
-        debug_print_role_assignments(role_assignments)
         self.assertTrue(role_assignments != set([]))
         self.check_pairwise_distinct(role_assignments)
+        self.check_no_vetoes_were_violated(role_assignments)
 
     def test_equal_number_of_students_and_roles(self):
         # GIVEN
@@ -57,6 +57,7 @@ class TestCalculator(unittest.TestCase):
         # THEN
         self.assertTrue(role_assignments != set([]))
         self.check_pairwise_distinct(role_assignments)
+        self.check_no_vetoes_were_violated(role_assignments)
 
     def test_more_students_than_roles(self):
         # GIVEN
@@ -111,10 +112,35 @@ class TestCalculator(unittest.TestCase):
         role_assignments = calculator.calculate_role_assignments()
 
         # THEN
-        debug_print_role_assignments(role_assignments)
         self.assertTrue(role_assignments != set([]))
         self.check_pairwise_distinct(role_assignments)
         self.check_no_vetoes_were_violated(role_assignments)
+
+    def test_essential_roles(self):
+        # GIVEN
+        roles = set([Role(f"Role{i}") for i in range(1, 31)])
+        essential_roles = set([Role(f"Role{i}") for i in range(1, 10)])
+        students = set([Student(f"Student{i}") for i in range(1, 10)])
+        calculator = Calculator(roles, students, essential_roles=essential_roles)
+
+        # WHEN
+        role_assignments = calculator.calculate_role_assignments()
+
+        # THEN
+        self.assertTrue(role_assignments != set([]))
+        self.check_pairwise_distinct(role_assignments)
+        self.check_no_vetoes_were_violated(role_assignments)
+        self.check_all_essential_roles_were_fulfilled(role_assignments, essential_roles)
+
+    def test_more_essential_roles_than_students(self):
+        # GIVEN
+        roles = set([Role(f"Role{i}") for i in range(1, 31)])
+        essential_roles = set([Role(f"Role{i}") for i in range(1, 10)])
+        students = set([Student(f"Student{i}") for i in range(1, 5)])
+        calculator = Calculator(roles, students, essential_roles=essential_roles)
+
+        # WHEN / THEN
+        self.assertRaises(RuntimeError, lambda: calculator.calculate_role_assignments())
 
     def check_pairwise_distinct(self, role_assignments: set[RoleAssignment]):
         for a in role_assignments:
@@ -138,6 +164,19 @@ class TestCalculator(unittest.TestCase):
                 f"but they were against the genders {str(vetoed_genders_msg)}; "
                 f"the role has gender {assignment.assigned_role.gender}",
             )
+
+    def check_all_essential_roles_were_fulfilled(
+        self, role_assignments: set[RoleAssignment], essential_roles: set[Role]
+    ):
+        for essential in essential_roles:
+            self.assertTrue(self.role_is_occupied(essential, role_assignments))
+
+    def role_is_occupied(self, essential, role_assignments):
+        output = False
+        for assignment in role_assignments:
+            if essential == assignment.assigned_role:
+                return True
+        return output
 
 
 if __name__ == "__main__":
