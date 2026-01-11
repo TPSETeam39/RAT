@@ -108,14 +108,13 @@ class Calculator:
         """
         Extends the CNF formula with clauses, which couple the roles.
         """
-        # Either role is not occupied by this_student or coupled_role is occupied by at least one student
+        # role is not occupied by this_student or coupled_role is occupied by at least one student
         for this_student in self.students:
             relevant_variables = []
             for other_student in self.students:
-                if this_student != other_student:
-                    relevant_variables.append(
-                        self._student_has_role(other_student, coupled_role)
-                    )
+                relevant_variables.append(
+                    self._student_has_role(other_student, coupled_role)
+                )
             self.cnf.append(
                 [-1 * self._student_has_role(this_student, role)] + relevant_variables
             )

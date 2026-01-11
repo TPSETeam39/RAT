@@ -83,14 +83,16 @@ class RoleCouplingGraph:
         self.map = self._get_graph_map(couplings)
 
     def _get_graph_map(self, couplings: list[Tuple[Role, Role]]):
-        graph_map: Dict[Role, set[Role]] = dict()
-        for role1, role2 in couplings:
-            if role1 not in graph_map.keys():
-                graph_map[role1] = {role2}
-            else:
-                graph_map[role1].add(role2)
-            if role2 not in graph_map.keys():
-                graph_map[role2] = {role1}
-            else:
-                graph_map[role2].add(role1)
+        present_nodes: set[Role] = set([])
+        for coupling in couplings:
+            present_nodes.add(coupling[0])
+            present_nodes.add(coupling[1])
+
+        graph_map: dict[Role, set[Role]] = {}
+        for node in present_nodes:
+            graph_map[node] = set([])
+
+        for coupling in couplings:
+            graph_map[coupling[0]].add(coupling[1])
+            graph_map[coupling[1]].add(coupling[0])
         return graph_map
