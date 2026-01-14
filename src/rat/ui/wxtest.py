@@ -1,7 +1,7 @@
 import wx
 import wx.dataview
 
-from .editor import StudentInfoEditorPanel, StudentInfoDataViewModel
+from .student_editor import StudentInfoEditorPanel
 
 class WxApp(wx.App):
     def __init__(self):
