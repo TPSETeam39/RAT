@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from typing import Tuple, Dict
+from typing import Tuple
 
 from .genders import Gender, GenderVetoOption, get_set_from_gender_veto_option
-import copy
 
 @dataclass(frozen=True)
 class Role:
@@ -10,7 +9,7 @@ class Role:
     This class represents a single role from the input table.
     The gender of a role is neutral by default.
     """
-    role_name: str
+    name: str
     gender: Gender = Gender.NEUTRAL
 
 
@@ -20,7 +19,7 @@ class Student:
     This class represents a single student from the input table.
     Every student prefers gender-neutral roles by default; he also has no gender vetoes by default.
     """
-    student_name: str
+    name: str
     gender_veto_option: GenderVetoOption = GenderVetoOption.NO_VETOES
     preferred_gender: Gender = Gender.NEUTRAL
 

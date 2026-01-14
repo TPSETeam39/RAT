@@ -9,12 +9,12 @@ class Gender(StrEnum):
 
 
 class GenderVetoOption(IntEnum):
-    NON_BINARY_ONLY = (0,)
-    MALE_ONLY = (1,)
-    FEMALE_ONLY = (2,)
-    MALE_AND_NON_BINARY = (3,)
-    FEMALE_AND_NON_BINARY = (4,)
-    FEMALE_AND_MALE = (5,)
+    NON_BINARY_ONLY = 0
+    MALE_ONLY = 1
+    FEMALE_ONLY = 2
+    MALE_AND_NON_BINARY = 3
+    FEMALE_AND_NON_BINARY = 4
+    FEMALE_AND_MALE = 5
     NO_VETOES = 6
 
 

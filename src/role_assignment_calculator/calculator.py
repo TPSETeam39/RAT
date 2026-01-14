@@ -6,14 +6,6 @@ from .calculator_io import Role, Student, RoleAssignment, RoleCouplingGraph
 from .genders import Gender
 
 
-def parse_student_name_from_assignment(assignment: str) -> str:
-    return assignment.split("/")[0]
-
-
-def parse_role_name_from_assignment(assignment: str) -> str:
-    return assignment.split("/")[1]
-
-
 class Calculator:
     def __init__(
         self,
@@ -41,7 +33,7 @@ class Calculator:
         if role_couplings is not None:
             self._set_role_couplings(role_couplings)
         if essential_roles is not None:
-            self._enforce_esesntial_roles(essential_roles)
+            self._enforce_essential_roles(essential_roles)
 
     def _fill_variable_pool(self, roles: set[Role], students: set[Student]):
         for s in students:
@@ -119,7 +111,7 @@ class Calculator:
                 [-1 * self._student_has_role(this_student, role)] + relevant_variables
             )
 
-    def _enforce_esesntial_roles(self, essential_roles):
+    def _enforce_essential_roles(self, essential_roles):
         for role in essential_roles:
             relevant_variables = []
             for student in self.students:

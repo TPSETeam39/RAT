@@ -7,7 +7,7 @@ import unittest
 def debug_print_role_assignments(role_assignments: set[RoleAssignment]):
     for assignment in role_assignments:
         print(
-            f"Student {assignment.student.student_name} was assigned {assignment.assigned_role.role_name}"
+            f"Student {assignment.student.name} was assigned {assignment.assigned_role.name}"
         )
 
 
@@ -205,7 +205,7 @@ class TestCalculator(unittest.TestCase):
             self.assertTrue(
                 assignment.assigned_role.gender
                 not in assignment.student.vetoed_genders,
-                f"{assignment.student.student_name} was assigned {assignment.assigned_role.role_name}, "
+                f"{assignment.student.name} was assigned {assignment.assigned_role.name}, "
                 f"but they were against the genders {str(vetoed_genders_msg)}; "
                 f"the role has gender {assignment.assigned_role.gender}",
             )
