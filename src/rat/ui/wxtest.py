@@ -2,6 +2,7 @@ import wx
 import wx.dataview
 
 from .editor import StudentInfoEditorPanel, StudentInfoDataViewModel
+from .output import OutputPanel
 
 class WxApp(wx.App):
     def __init__(self):
@@ -34,9 +35,9 @@ class TestWindow(wx.Frame):
         #self.label = wx.StaticText(self.panel, label="Hi from wxPython!")
         #main_sizer.Add(self.label)
 
-        #self.button = wx.Button(self.panel, label="Press me!")
-        #self.Bind(wx.EVT_BUTTON, self.on_button, self.button)
-        #main_sizer.Add(self.button)
+        self.button = wx.Button(self.panel, label="Press me!")
+        self.Bind(wx.EVT_BUTTON, self.on_button, self.button)
+        main_sizer.Add(self.button)
 
         self.test = StudentInfoEditorPanel(self.panel)
         #self.test.BackgroundColour = wx.RED
@@ -48,8 +49,13 @@ class TestWindow(wx.Frame):
         main_sizer.Add(self.test2, 1, wx.EXPAND | wx.ALL)
         top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL)
 
+        self.test3 = OutputPanel(self.panel)
+        top_sizer.Add(self.test3, 1, wx.EXPAND | wx.ALL)
+
         self.panel.SetSizerAndFit(top_sizer)
         self.Fit()
     
     def on_button(self, event: wx.Event):
-        self.test.load_test_data()
+        self.test3.clear()
+        self.test3.load_group("Test Group 1", self.test.get_students())
+        self.test3.load_group("Test Group 2", self.test2.get_students())
