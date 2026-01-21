@@ -231,6 +231,9 @@ class StudentInfoEditorPanel(wx.Panel):
     
     def remove_student_by_id(self, id: int) -> None:
         self.model.remove_student_by_id(id)
+
+    def get_students(self) -> list[Student]:
+        return self.model.get_students()
     
     def get_selections(self) -> list[int]:
         return [self.model.dv_item_to_student_id(item) for item in self.dv.Selections]
