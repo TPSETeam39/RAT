@@ -6,6 +6,10 @@ from itertools import combinations
 import wx
 import wx.dataview
 
+#meine import
+import csv
+
+
 # eventually move data structures to UI/backend code interface
 class Gender(Enum):
     FEMALE = auto()
@@ -165,16 +169,20 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
         self.ItemDeleted(wx.dataview.DataViewItem(0), self.student_id_to_dv_item(id))
     
     def get_students(self) -> list[Student]:
-        return self.students.values()
+        return list(self.students.values())
 
 
 class StudentInfoEditorPanel(wx.Panel):
     def __init__(self, parent: wx.Window):
         super().__init__(parent)
 
+        #meine
+        self.button_import = None
+
         self.model = StudentInfoDataViewModel()
         self.dv = wx.dataview.DataViewCtrl(self, style=wx.dataview.DV_ROW_LINES | wx.dataview.DV_MULTIPLE)
         self.dv.AssociateModel(self.model)
+        self.model.DecRef()
         self.append_columns()
         
         self.init_layout()
@@ -196,6 +204,10 @@ class StudentInfoEditorPanel(wx.Panel):
         top_sizer.Add(button_sizer, flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         self.SetSizerAndFit(top_sizer)
+        # import button
+        button_import = wx.Button(self, label="Import CSV")
+        button_sizer.Add(button_import, flag=wx.RIGHT, border=5)
+        self.button_import = button_import
 
     def bind_event_handlers(self):
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_ACTIVATED, self.on_dataview_item_activated, self.dv)
@@ -203,6 +215,9 @@ class StudentInfoEditorPanel(wx.Panel):
         self.Bind(wx.EVT_CONTEXT_MENU, self.on_context_menu, self.dv)
 
         self.Bind(wx.EVT_BUTTON, self.on_button)
+
+        #button import binden
+        self.button_import.Bind(wx.EVT_BUTTON, self.on_import_csv)
 
     def append_columns(self):
         self.dv.AppendTextColumn("ID",
@@ -271,3 +286,56 @@ class StudentInfoEditorPanel(wx.Panel):
         menu.Append(wx.ID_DELETE, "&Delete")
         menu.Bind(wx.EVT_MENU, lambda event, id=id: self.on_menu(event, id))
         self.PopupMenu(menu, event.GetPosition())
+
+    #csv import Dialog
+    def on_import_csv(self, event):
+        with wx.FileDialog(self,"csv-Datei auswählen",
+                           wildcard="CSV files (*.csv)|*.csv",
+                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
+        ) as dialog:
+            if dialog.ShowModal() != wx.ID_OK:
+                return
+            path=dialog.GetPath()
+
+        self.import_csv_file(path)
+
+    # csv lesen und student erzeugen
+    def import_csv_file(self, path: str):
+        with open(path, newline="", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+
+            for row in reader:
+                student = self.student_from_csv_row(row)
+                self.add_student(student)
+
+    # csv zu student format konvertieren
+    def student_from_csv_row(self, row: dict) -> Student:
+        last_name = row["LastName"].strip()
+        first_name = row["FirstName"].strip()
+
+        gender_str = row["Gender"].strip()
+        gender = self.model.inv_gender_map.get(gender_str)
+
+      #  if gender is None:
+        #    raise ValueError(f"Unbekanntes Gender: {gender_str}")
+
+        vetos = set()
+        vetos_str= []
+        if row.get("Vetos [MALE]") == "Ja":
+          vetos_str.append("Male")
+        if row.get("Vetos [FEMALE]") == "Ja":
+          vetos_str.append("Female")
+        if row.get("Vetos [NON_BINARY]") == "Ja":
+          vetos_str.append("Non-Binary")
+
+        if vetos_str:
+            for veto in vetos_str:
+                vetos.add(self.model.inv_gender_map[veto.strip()])
+        st_id= row.get("AntwortID", "").strip()
+        return Student(
+            id=st_id,
+            last_name=last_name,
+            first_name=first_name,
+            gender=gender,
+            vetos=vetos
+        )
