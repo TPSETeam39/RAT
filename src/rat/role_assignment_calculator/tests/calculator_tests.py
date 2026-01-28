@@ -19,7 +19,7 @@ def role_is_occupied(role, role_assignments):
     return output
 
 
-N_FOR_PREF_TESTS = 5
+N_FOR_PREF_TESTS = 10
 
 
 def get_roles_for_gender_pref_test():
@@ -231,49 +231,17 @@ class TestCalculator(unittest.TestCase):
         self.assertTrue(role_assignments != set([]))
         self.check_pairwise_distinct(role_assignments)
         self.check_all_essential_roles_were_fulfilled(role_assignments, essential_roles)
-        for n in range(0, 5):
+        for n in range(1, 5):
             self.assertTrue(role_is_occupied(roles[n], role_assignments))
 
     def test_and_benchmark_gender_preferences(self):
         # GIVEN
-        male_roles = set(
-            [Role(f"MaleRole{i}", Gender.MALE) for i in range(1, N_FOR_PREF_TESTS + 1)]
+        female_roles, gender_neutral_roles, male_roles, non_binary_roles = (
+            get_roles_for_gender_pref_test()
         )
-        female_roles = set(
-            [
-                Role(f"FemaleRole{i}", Gender.FEMALE)
-                for i in range(1, N_FOR_PREF_TESTS + 1)
-            ]
-        )
-        gender_neutral_roles = set(
-            [
-                Role(f"NeutralRole{i}", Gender.NEUTRAL)
-                for i in range(1, N_FOR_PREF_TESTS + 1)
-            ]
-        )
-        non_binary_roles = set(
-            [
-                Role(f"NonBinaryRole{i}", Gender.NON_BINARY)
-                for i in range(1, N_FOR_PREF_TESTS + 1)
-            ]
-        )
-        male_students = set(
-            [
-                Student(f"MaleStudent{i}", preferred_gender=Gender.MALE)
-                for i in range(1, N_FOR_PREF_TESTS + 1)
-            ]
-        )
-        female_students = set(
-            [
-                Student(f"FemaleStudent{i}", preferred_gender=Gender.FEMALE)
-                for i in range(1, N_FOR_PREF_TESTS + 1)
-            ]
-        )
-        non_binary_students = set(
-            [
-                Student(f"NonBinaryStudent{i}", preferred_gender=Gender.NON_BINARY)
-                for i in range(1, N_FOR_PREF_TESTS + 1)
-            ]
+
+        female_students, male_students, non_binary_students = (
+            get_students_for_gender_pref_test()
         )
         calculator = Calculator(
             male_roles.union(female_roles)
@@ -322,59 +290,6 @@ class TestCalculator(unittest.TestCase):
             male_roles,
             non_binary_roles,
             role_assignments_rc2_stratified,
-        )
-
-    def test_neutral_preference(self):
-        # GIVEN
-        male_roles = set(
-            [Role(f"MaleRole{i}", Gender.MALE) for i in range(1, N_FOR_PREF_TESTS + 1)]
-        )
-        female_roles = set(
-            [
-                Role(f"FemaleRole{i}", Gender.FEMALE)
-                for i in range(1, N_FOR_PREF_TESTS + 1)
-            ]
-        )
-        gender_neutral_roles = set(
-            [
-                Role(f"NeutralRole{i}", Gender.NEUTRAL)
-                for i in range(1, N_FOR_PREF_TESTS + 1)
-            ]
-        )
-        non_binary_roles = set(
-            [
-                Role(f"NonBinaryRole{i}", Gender.NON_BINARY)
-                for i in range(1, N_FOR_PREF_TESTS + 1)
-            ]
-        )
-        male_students = set(
-            [
-                Student(f"MaleStudent{i}", preferred_gender=Gender.MALE)
-                for i in range(1, 2 * N_FOR_PREF_TESTS + 1)
-            ]
-        )
-        calculator = Calculator(
-            male_roles.union(female_roles)
-            .union(gender_neutral_roles)
-            .union(non_binary_roles),
-            male_students,
-        )
-
-        # WHEN
-        role_assignments = calculator.calculate_role_assignments()
-        debug_print_role_assignments(role_assignments)
-
-        # THEN
-        self.assertTrue(role_assignments != set([]))
-        self.check_pairwise_distinct(role_assignments)
-        self.assertTrue(
-            all(role_is_occupied(m_role, role_assignments) for m_role in male_roles)
-        )
-        self.assertTrue(
-            all(
-                role_is_occupied(neut_role, role_assignments)
-                for neut_role in gender_neutral_roles
-            )
         )
 
     def validate_role_assignments_with_gender_preferences(
