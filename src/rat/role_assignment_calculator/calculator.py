@@ -6,7 +6,8 @@ from pysat.examples.rc2 import RC2, RC2Stratified
 from .calculator_io import Role, Student, RoleAssignment, RoleCouplingGraph
 from .genders import Gender
 
-GENDER_PREFERENCE_WEIGHT = 1
+GENDER_PREFERENCE_WEIGHT = 10
+NEUTRAL_PREFERENCE_WEIGHT = 1
 
 
 class Calculator:
@@ -129,6 +130,11 @@ class Calculator:
                 self.wcnf.append(
                     [self._student_has_role(student, preferred_role)],
                     weight=GENDER_PREFERENCE_WEIGHT,
+                )
+            for neutral_role in self._get_roles_with_gender(Gender.NEUTRAL):
+                self.wcnf.append(
+                    [self._student_has_role(student, neutral_role)],
+                    weight=NEUTRAL_PREFERENCE_WEIGHT,
                 )
 
     def calculate_role_assignments(
