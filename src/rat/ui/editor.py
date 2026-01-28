@@ -331,9 +331,8 @@ class StudentInfoEditorPanel(wx.Panel):
         if vetos_str:
             for veto in vetos_str:
                 vetos.add(self.model.inv_gender_map[veto.strip()])
-        st_id= row.get("AntwortID", "").strip()
+
         return Student(
-            id=st_id,
             last_name=last_name,
             first_name=first_name,
             gender=gender,
