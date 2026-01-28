@@ -1,55 +1,39 @@
 import wx
 import wx.dataview
 
-from .student_editor import StudentInfoEditorPanel
+from .role_editor import Role, RoleEditorPanel
+from rat.role_assignment_calculator.genders import Gender
+
 
 class WxApp(wx.App):
     def __init__(self):
         super().__init__(redirect=False)
-
-        # wx.Log.SetActiveTarget(wx.LogStderr())
-
         self.frame = TestWindow()
         self.frame.Show()
+
 
 class TestWindow(wx.Frame):
     def __init__(self):
         super().__init__(parent=None, title="Test")
 
-        self.SetMinSize((1200, 500))
-
-        self.menu_bar = wx.MenuBar()
-        test_menu = wx.Menu()
-        test_menu.Append(0, "Hi")
-        self.menu_bar.Append(test_menu, "&Test")
-
-        self.SetMenuBar(self.menu_bar)
+        self.SetMinSize((800, 500))
 
         self.panel = wx.Panel(self)
-        
-        #main_sizer = wx.FlexGridSizer(2, 10, 10)
-        top_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        #self.label = wx.StaticText(self.panel, label="Hi from wxPython!")
-        #main_sizer.Add(self.label)
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
-        #self.button = wx.Button(self.panel, label="Press me!")
-        #self.Bind(wx.EVT_BUTTON, self.on_button, self.button)
-        #main_sizer.Add(self.button)
+        self.role_editor = RoleEditorPanel(self.panel)
+        sizer.Add(self.role_editor, 1, wx.EXPAND | wx.ALL, 10)
 
-        self.test = StudentInfoEditorPanel(self.panel)
-        #self.test.BackgroundColour = wx.RED
-        #self.test.SetMinSize((500, 200))
-        main_sizer.Add(self.test, 1, wx.EXPAND | wx.ALL)
+        # Test data
+        self.role_editor.add_role(Role(None, "Role 1", Gender.FEMALE))
+        self.role_editor.add_role(Role(None, "Role 2", Gender.MALE))
+        self.role_editor.add_role(Role(None, "Role 3", Gender.NON_BINARY))
 
-        self.test2 = StudentInfoEditorPanel(self.panel)
-        #self.test2.BackgroundColour = wx.BLUE
-        main_sizer.Add(self.test2, 1, wx.EXPAND | wx.ALL)
-        top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL)
-
-        self.panel.SetSizerAndFit(top_sizer)
+        self.panel.SetSizerAndFit(sizer)
         self.Fit()
-    
-    def on_button(self, event: wx.Event):
-        self.test.load_test_data()
+
+
+if __name__ == "__main__":
+    app = WxApp()
+    app.MainLoop()
