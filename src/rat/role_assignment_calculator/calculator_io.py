@@ -3,12 +3,14 @@ from typing import Tuple
 
 from .genders import Gender, GenderVetoOption, get_set_from_gender_veto_option
 
+
 @dataclass(frozen=True)
 class Role:
     """
     This class represents a single role from the input table.
     The gender of a role is neutral by default.
     """
+
     name: str
     gender: Gender = Gender.NEUTRAL
 
@@ -19,20 +21,31 @@ class Student:
     This class represents a single student from the input table.
     Every student prefers gender-neutral roles by default; he also has no gender vetoes by default.
     """
+
     name: str
     gender_veto_option: GenderVetoOption = GenderVetoOption.NO_VETOES
     preferred_gender: Gender = Gender.NEUTRAL
 
     def __post_init__(self):
-        object.__setattr__(self, "vetoed_genders", get_set_from_gender_veto_option(self.gender_veto_option))
+        object.__setattr__(
+            self,
+            "vetoed_genders",
+            get_set_from_gender_veto_option(self.gender_veto_option),
+        )
+
+    def get_vetoed_genders(self):
+        return self.vetoed_genders
+
 
 @dataclass(frozen=True)
 class RoleAssignment:
     """
     This class represents a single assignment of a student to a role.
     """
+
     student: Student
     assigned_role: Role
+
 
 class RoleCouplingGraph:
     """

@@ -7,6 +7,9 @@ class Gender(StrEnum):
     FEMALE = "FEMALE"
     NEUTRAL = "NEUTRAL"
 
+    def __repr__(self):
+        return self.value
+
 
 class GenderVetoOption(IntEnum):
     NON_BINARY_ONLY = 0
