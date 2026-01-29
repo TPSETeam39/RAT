@@ -2,8 +2,7 @@ from pysat.card import CardEnc, EncType
 from pysat.formula import IDPool, CNFPlus
 from pysat.solvers import Solver
 
-from .calculator_io import Role, Student, RoleAssignment, RoleCouplingGraph
-from .genders import Gender
+from rat.io import Role, Student, RoleAssignment, RoleCouplingGraph, Gender
 
 
 class Calculator:

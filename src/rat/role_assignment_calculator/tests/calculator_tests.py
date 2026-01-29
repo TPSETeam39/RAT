@@ -1,6 +1,12 @@
 from ..calculator import Calculator
-from ..calculator_io import Student, Role, RoleAssignment, RoleCouplingGraph
-from role_assignment_calculator.genders import Gender, GenderVetoOption
+from rat.io import (
+    Student,
+    Role,
+    RoleAssignment,
+    RoleCouplingGraph,
+    Gender,
+    GenderVetoOption,
+)
 import unittest
 
 
