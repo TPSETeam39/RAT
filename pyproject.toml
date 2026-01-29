@@ -12,6 +12,7 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "pyinstaller>=6.18.0",
     "pytest>=9.0.2",
     "python-sat>=1.8.dev26",
     "scipy>=1.16.3",
