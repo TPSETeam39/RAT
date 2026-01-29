@@ -25,4 +25,8 @@ uv run rat
 
 ### Packaging to an executable
 
-TODO
+The application can be packed into a single executable by running the following command **on the target platform**, with the matching spec file specified.
+
+```sh
+uv run pyinstaller <spec file>
+```
