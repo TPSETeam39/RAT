@@ -4,10 +4,15 @@ version = "0.1.0"
 description = "Role Assignment Tool"
 readme = "README.md"
 authors = [
-    { name = "Yannis", email = "yannis@yannis2707.me" }
+    { name = "Darryl" },
+    { name = "Evander Jose" },
+    { name = "Jan" },
+    { name = "Marco" },
+    { name = "Yannis" }
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "pyinstaller>=6.18.0",
     "pytest>=9.0.2",
     "python-sat>=1.8.dev26",
     "scipy>=1.16.3",
