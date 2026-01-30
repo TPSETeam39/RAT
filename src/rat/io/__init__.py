@@ -48,8 +48,12 @@ class Role:
     The gender of a role is neutral by default.
     """
 
-    name: str
+    id: int
+    name: str = "NONAME"
     gender: Gender = Gender.NEUTRAL
+
+    def __repr__(self):
+        return f"Role ({self.id}) {self.name}: gender={self.gender}"
 
 
 @dataclass(frozen=True)
@@ -59,7 +63,9 @@ class Student:
     Every student prefers gender-neutral roles by default; he also has no gender vetoes by default.
     """
 
-    name: str
+    id: int
+    first_name: str = "NONAME"
+    last_name: str = "NONAME"
     gender_veto_option: GenderVetoOption = GenderVetoOption.NO_VETOES
     preferred_gender: Gender = Gender.NEUTRAL
 
@@ -68,6 +74,17 @@ class Student:
             self,
             "vetoed_genders",
             get_set_from_gender_veto_option(self.gender_veto_option),
+        )
+
+    def get_vetoed_genders(self) -> set[Gender]:
+        return self.vetoed_genders
+
+    def __repr__(self):
+        return (
+            f"Student ({self.id}) "
+            f"{self.first_name} {self.last_name}: "
+            f"veto_option={self.gender_veto_option.name}, "
+            f"preferred_gender={str(self.preferred_gender)}"
         )
 
 
@@ -79,6 +96,9 @@ class RoleAssignment:
 
     student: Student
     assigned_role: Role
+
+    def __repr__(self):
+        return f"RoleAssignment: {self.student} -> {self.assigned_role}"
 
 
 class RoleCouplingGraph:

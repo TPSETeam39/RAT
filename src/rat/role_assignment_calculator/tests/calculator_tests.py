@@ -12,9 +12,7 @@ import unittest
 
 def debug_print_role_assignments(role_assignments: set[RoleAssignment]):
     for assignment in role_assignments:
-        print(
-            f"Student {assignment.student.name} was assigned {assignment.assigned_role.name}"
-        )
+        print(assignment)
 
 
 def role_is_occupied(role, role_assignments):
@@ -29,14 +27,15 @@ class TestCalculator(unittest.TestCase):
 
     def test_determinism(self):
         # GIVEN
-        roles = set([Role(f"Role{i}") for i in range(1, 31)])
-        students = set([Student(f"Student{i}") for i in range(1, 10)])
+        roles = set([Role(i) for i in range(1, 31)])
+        students = set([Student(i) for i in range(1, 10)])
         calculator_one = Calculator(roles, students)
         calculator_two = Calculator(roles, students)
 
         # WHEN
         role_assignments_one = calculator_one.calculate_role_assignments()
         role_assignments_two = calculator_two.calculate_role_assignments()
+        debug_print_role_assignments(role_assignments_two)
 
         # THEN
         self.assertTrue(role_assignments_one != set([]))
@@ -47,7 +46,7 @@ class TestCalculator(unittest.TestCase):
 
     def test_more_roles_than_students(self):
         # GIVEN
-        roles = set([Role(f"Role{i}") for i in range(1, 31)])
+        roles = set([Role(i) for i in range(1, 31)])
         students = set([Student(f"Student{i}") for i in range(1, 10)])
         calculator = Calculator(roles, students)
 
@@ -61,8 +60,8 @@ class TestCalculator(unittest.TestCase):
 
     def test_equal_number_of_students_and_roles(self):
         # GIVEN
-        roles = set([Role(f"Role{i}") for i in range(1, 31)])
-        students = set([Student(f"Student{i}") for i in range(1, 31)])
+        roles = set([Role(i) for i in range(1, 31)])
+        students = set([Student(i) for i in range(1, 31)])
         self.calculator = Calculator(roles, students)
 
         # WHEN
@@ -75,8 +74,8 @@ class TestCalculator(unittest.TestCase):
 
     def test_more_students_than_roles(self):
         # GIVEN
-        roles = set([Role(f"Role{i}") for i in range(1, 20)])
-        students = set([Student(f"Student{i}") for i in range(1, 31)])
+        roles = set([Role(i) for i in range(1, 20)])
+        students = set([Student(i) for i in range(1, 31)])
         calculator = Calculator(roles, students)
 
         # WHEN / THEN
@@ -84,33 +83,31 @@ class TestCalculator(unittest.TestCase):
 
     def test_gender_vetoes(self):
         # GIVEN
-        gender_neutral_roles = set([Role(f"NeutralRole{i}") for i in range(1, 16)])
-        male_roles = set([Role(f"MaleRole{i}", Gender.MALE) for i in range(1, 16)])
-        female_roles = set(
-            [Role(f"FemaleRole{i}", Gender.FEMALE) for i in range(1, 16)]
-        )
+        gender_neutral_roles = set([Role(i) for i in range(1, 16)])
+        male_roles = set([Role(i, gender=Gender.MALE) for i in range(1, 16)])
+        female_roles = set([Role(i, gender=Gender.FEMALE) for i in range(1, 16)])
         non_binary_roles = set(
-            [Role(f"NonBinaryRole{i}", Gender.NON_BINARY) for i in range(1, 16)]
+            [Role(i, gender=Gender.NON_BINARY) for i in range(1, 16)]
         )
 
         males = set(
             [
-                Student(f"MaleStudent{i}", GenderVetoOption.FEMALE_ONLY, Gender.MALE)
+                Student(i, gender_veto_option=GenderVetoOption.FEMALE_ONLY)
                 for i in range(1, 16)
             ]
         )
         females = set(
             [
-                Student(f"FemaleStudent{i}", GenderVetoOption.MALE_ONLY, Gender.FEMALE)
+                Student(i, gender_veto_option=GenderVetoOption.MALE_ONLY)
                 for i in range(1, 16)
             ]
         )
         non_binaries = set(
             [
                 Student(
-                    f"NonBinaryStudent{i}",
-                    GenderVetoOption.FEMALE_AND_MALE,
-                    Gender.NON_BINARY,
+                    i,
+                    gender_veto_option=GenderVetoOption.FEMALE_AND_MALE,
+                    preferred_gender=Gender.NON_BINARY,
                 )
                 for i in range(1, 16)
             ]
@@ -132,9 +129,9 @@ class TestCalculator(unittest.TestCase):
 
     def test_essential_roles(self):
         # GIVEN
-        roles = set([Role(f"Role{i}") for i in range(1, 31)])
-        essential_roles = set([Role(f"Role{i}") for i in range(1, 10)])
-        students = set([Student(f"Student{i}") for i in range(1, 10)])
+        roles = set([Role(i) for i in range(1, 31)])
+        essential_roles = set([Role(i) for i in range(1, 10)])
+        students = set([Student(i) for i in range(1, 10)])
         calculator = Calculator(roles, students, essential_roles=essential_roles)
 
         # WHEN
@@ -148,9 +145,9 @@ class TestCalculator(unittest.TestCase):
 
     def test_more_essential_roles_than_students(self):
         # GIVEN
-        roles = set([Role(f"Role{i}") for i in range(1, 31)])
-        essential_roles = set([Role(f"Role{i}") for i in range(1, 10)])
-        students = set([Student(f"Student{i}") for i in range(1, 5)])
+        roles = set([Role(i) for i in range(1, 31)])
+        essential_roles = set([Role(i) for i in range(1, 10)])
+        students = set([Student(i) for i in range(1, 5)])
         calculator = Calculator(roles, students, essential_roles=essential_roles)
 
         # WHEN / THEN
@@ -164,7 +161,7 @@ class TestCalculator(unittest.TestCase):
         Role4 is essential and coupled to Role5 --> Role5 is also essential
         """
         # GIVEN
-        roles = [Role(f"Role{i}") for i in range(1, 31)]
+        roles = [Role(i) for i in range(1, 31)]
         essential_roles = {roles[0]}
         role_coupling_graph = RoleCouplingGraph(
             [
@@ -174,7 +171,7 @@ class TestCalculator(unittest.TestCase):
                 (roles[3], roles[4]),
             ]
         )
-        students = set([Student(f"Student{i}") for i in range(1, 6)])
+        students = set([Student(i) for i in range(1, 6)])
         calculator = Calculator(
             set(roles),
             students,
@@ -206,12 +203,13 @@ class TestCalculator(unittest.TestCase):
     def check_no_vetoes_were_violated(self, role_assignments: set[RoleAssignment]):
         for assignment in role_assignments:
             vetoed_genders_msg = [
-                vetoed_gender for vetoed_gender in assignment.student.vetoed_genders
+                vetoed_gender
+                for vetoed_gender in assignment.student.get_vetoed_genders()
             ]
             self.assertTrue(
                 assignment.assigned_role.gender
-                not in assignment.student.vetoed_genders,
-                f"{assignment.student.name} was assigned {assignment.assigned_role.name}, "
+                not in assignment.student.get_vetoed_genders(),
+                f"{assignment.student} was assigned {assignment.assigned_role}, "
                 f"but they were against the genders {str(vetoed_genders_msg)}; "
                 f"the role has gender {assignment.assigned_role.gender}",
             )
