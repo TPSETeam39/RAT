@@ -1,7 +1,9 @@
 import wx
 import wx.dataview
 
-from .editor import StudentInfoEditorPanel, StudentInfoDataViewModel
+from rat.io import Gender, Student, Role, GenderVetoOption
+from rat.role_assignment_calculator.calculator import Calculator
+from .editor import StudentInfoEditorPanel
 from .output import OutputPanel
 
 class WxApp(wx.App):
@@ -56,6 +58,16 @@ class TestWindow(wx.Frame):
         self.Fit()
     
     def on_button(self, event: wx.Event):
+        roles = set()
+        for i in range(0, 30):
+            roles.add(Role(i, f"Role {i}", Gender.MALE))
+
+        students = set()
+        for student in self.test.get_students():
+            students.add(Student(student.id, student.first_name, student.last_name, GenderVetoOption.MALE_ONLY, Gender.NON_BINARY))
+        
+        calc = Calculator(roles, students)
+        assignments = calc.calculate_role_assignments()
+
         self.test3.clear()
-        self.test3.load_group("Test Group 1", self.test.get_students())
-        self.test3.load_group("Test Group 2", self.test2.get_students())
+        self.test3.load_group("Test Group 1", assignments)
