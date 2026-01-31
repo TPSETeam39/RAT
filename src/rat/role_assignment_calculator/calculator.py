@@ -2,7 +2,7 @@ from pysat.card import CardEnc, EncType
 from pysat.formula import IDPool, CNFPlus
 from pysat.solvers import Solver
 
-from rat.io import Role, Student, RoleAssignment, RoleCouplingGraph, Gender
+from rat.io import Role, Student, RoleAssignment, RoleCouplingGraph, RoleGender
 
 
 class Calculator:
@@ -20,10 +20,10 @@ class Calculator:
         self._fill_variable_pool(roles, students)
 
         self._roles_with_gender = {
-            Gender.NON_BINARY: self._get_roles_with_gender(Gender.NON_BINARY),
-            Gender.NEUTRAL: self._get_roles_with_gender(Gender.NEUTRAL),
-            Gender.MALE: self._get_roles_with_gender(Gender.MALE),
-            Gender.FEMALE: self._get_roles_with_gender(Gender.FEMALE),
+            RoleGender.NON_BINARY: self._get_roles_with_gender(RoleGender.NON_BINARY),
+            RoleGender.NEUTRAL: self._get_roles_with_gender(RoleGender.NEUTRAL),
+            RoleGender.MALE: self._get_roles_with_gender(RoleGender.MALE),
+            RoleGender.FEMALE: self._get_roles_with_gender(RoleGender.FEMALE),
         }
 
         self.cnf = CNFPlus()
@@ -80,7 +80,7 @@ class Calculator:
         """
         output = []
         for this_student in self.students:
-            for vetoed_gender in this_student.vetoed_genders:
+            for vetoed_gender in this_student.get_vetoed_genders():
                 for vetoed_role in self._roles_with_gender[vetoed_gender]:
                     output.append(
                         -1 * self._student_has_role(this_student, vetoed_role)
@@ -147,9 +147,9 @@ class Calculator:
             output.add(RoleAssignment(ra[0], ra[1]))
         return output
 
-    def _get_roles_with_gender(self, vetoed_gender: Gender):
+    def _get_roles_with_gender(self, vetoed_gender: RoleGender):
         output = []
         for role in self.roles:
             if role.gender == vetoed_gender:
                 output.append(role)
-        return output
+        return set(output)

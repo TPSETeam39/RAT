@@ -4,10 +4,16 @@ from typing import Tuple
 from enum import StrEnum, IntEnum
 
 
-class Gender(StrEnum):
-    NON_BINARY = "NON-BINARY"
-    MALE = "MALE"
+class StudentGender(StrEnum):
     FEMALE = "FEMALE"
+    MALE = "MALE"
+    NON_BINARY = "NON-BINARY"
+
+
+class RoleGender(StrEnum):
+    FEMALE = "FEMALE"
+    MALE = "MALE"
+    NON_BINARY = "NON-BINARY"
     NEUTRAL = "NEUTRAL"
 
 
@@ -23,20 +29,20 @@ class GenderVetoOption(IntEnum):
 
 def get_set_from_gender_veto_option(
     gender_veto_option: GenderVetoOption,
-) -> set[Gender]:
+) -> set[RoleGender]:
     match gender_veto_option:
         case GenderVetoOption.NON_BINARY_ONLY:
-            return {Gender.NON_BINARY}
+            return {RoleGender.NON_BINARY}
         case GenderVetoOption.MALE_ONLY:
-            return {Gender.MALE}
+            return {RoleGender.MALE}
         case GenderVetoOption.FEMALE_ONLY:
-            return {Gender.FEMALE}
+            return {RoleGender.FEMALE}
         case GenderVetoOption.MALE_AND_NON_BINARY:
-            return {Gender.MALE, Gender.NON_BINARY}
+            return {RoleGender.MALE, RoleGender.NON_BINARY}
         case GenderVetoOption.FEMALE_AND_NON_BINARY:
-            return {Gender.FEMALE, Gender.NON_BINARY}
+            return {RoleGender.FEMALE, RoleGender.NON_BINARY}
         case GenderVetoOption.FEMALE_AND_MALE:
-            return {Gender.FEMALE, Gender.MALE}
+            return {RoleGender.FEMALE, RoleGender.MALE}
         case GenderVetoOption.NO_VETOES:
             return set([])
 
@@ -50,7 +56,7 @@ class Role:
 
     id: int
     name: str = "NONAME"
-    gender: Gender = Gender.NEUTRAL
+    gender: RoleGender = RoleGender.NEUTRAL
 
     def __repr__(self):
         return f"Role ({self.id}) {self.name}: gender={self.gender}"
@@ -64,10 +70,10 @@ class Student:
     """
 
     id: int
+    gender: StudentGender
     first_name: str = "NONAME"
     last_name: str = "NONAME"
     gender_veto_option: GenderVetoOption = GenderVetoOption.NO_VETOES
-    preferred_gender: Gender = Gender.NEUTRAL
 
     def __post_init__(self):
         object.__setattr__(
@@ -76,7 +82,7 @@ class Student:
             get_set_from_gender_veto_option(self.gender_veto_option),
         )
 
-    def get_vetoed_genders(self) -> set[Gender]:
+    def get_vetoed_genders(self) -> set[RoleGender]:
         return self.vetoed_genders
 
     def __repr__(self):
@@ -84,7 +90,7 @@ class Student:
             f"Student ({self.id}) "
             f"{self.first_name} {self.last_name}: "
             f"veto_option={self.gender_veto_option.name}, "
-            f"preferred_gender={str(self.preferred_gender)}"
+            f"preferred_gender={str(self.gender)}"
         )
 
 

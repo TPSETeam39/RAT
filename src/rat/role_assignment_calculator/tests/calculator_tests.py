@@ -4,8 +4,9 @@ from rat.io import (
     Role,
     RoleAssignment,
     RoleCouplingGraph,
-    Gender,
+    RoleGender,
     GenderVetoOption,
+    StudentGender,
 )
 import unittest
 
@@ -28,7 +29,7 @@ class TestCalculator(unittest.TestCase):
     def test_determinism(self):
         # GIVEN
         roles = set([Role(i) for i in range(1, 31)])
-        students = set([Student(i) for i in range(1, 10)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 10)])
         calculator_one = Calculator(roles, students)
         calculator_two = Calculator(roles, students)
 
@@ -47,7 +48,7 @@ class TestCalculator(unittest.TestCase):
     def test_more_roles_than_students(self):
         # GIVEN
         roles = set([Role(i) for i in range(1, 31)])
-        students = set([Student(f"Student{i}") for i in range(1, 10)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 10)])
         calculator = Calculator(roles, students)
 
         # WHEN
@@ -61,7 +62,7 @@ class TestCalculator(unittest.TestCase):
     def test_equal_number_of_students_and_roles(self):
         # GIVEN
         roles = set([Role(i) for i in range(1, 31)])
-        students = set([Student(i) for i in range(1, 31)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 31)])
         self.calculator = Calculator(roles, students)
 
         # WHEN
@@ -75,7 +76,7 @@ class TestCalculator(unittest.TestCase):
     def test_more_students_than_roles(self):
         # GIVEN
         roles = set([Role(i) for i in range(1, 20)])
-        students = set([Student(i) for i in range(1, 31)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 31)])
         calculator = Calculator(roles, students)
 
         # WHEN / THEN
@@ -84,21 +85,29 @@ class TestCalculator(unittest.TestCase):
     def test_gender_vetoes(self):
         # GIVEN
         gender_neutral_roles = set([Role(i) for i in range(1, 16)])
-        male_roles = set([Role(i, gender=Gender.MALE) for i in range(1, 16)])
-        female_roles = set([Role(i, gender=Gender.FEMALE) for i in range(1, 16)])
+        male_roles = set([Role(i, gender=RoleGender.MALE) for i in range(1, 16)])
+        female_roles = set([Role(i, gender=RoleGender.FEMALE) for i in range(1, 16)])
         non_binary_roles = set(
-            [Role(i, gender=Gender.NON_BINARY) for i in range(1, 16)]
+            [Role(i, gender=RoleGender.NON_BINARY) for i in range(1, 16)]
         )
 
         males = set(
             [
-                Student(i, gender_veto_option=GenderVetoOption.FEMALE_ONLY)
+                Student(
+                    i,
+                    gender=StudentGender.MALE,
+                    gender_veto_option=GenderVetoOption.FEMALE_ONLY,
+                )
                 for i in range(1, 16)
             ]
         )
         females = set(
             [
-                Student(i, gender_veto_option=GenderVetoOption.MALE_ONLY)
+                Student(
+                    i,
+                    gender=StudentGender.FEMALE,
+                    gender_veto_option=GenderVetoOption.MALE_ONLY,
+                )
                 for i in range(1, 16)
             ]
         )
@@ -106,8 +115,8 @@ class TestCalculator(unittest.TestCase):
             [
                 Student(
                     i,
+                    gender=StudentGender.NON_BINARY,
                     gender_veto_option=GenderVetoOption.FEMALE_AND_MALE,
-                    preferred_gender=Gender.NON_BINARY,
                 )
                 for i in range(1, 16)
             ]
@@ -131,7 +140,7 @@ class TestCalculator(unittest.TestCase):
         # GIVEN
         roles = set([Role(i) for i in range(1, 31)])
         essential_roles = set([Role(i) for i in range(1, 10)])
-        students = set([Student(i) for i in range(1, 10)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 10)])
         calculator = Calculator(roles, students, essential_roles=essential_roles)
 
         # WHEN
@@ -147,7 +156,7 @@ class TestCalculator(unittest.TestCase):
         # GIVEN
         roles = set([Role(i) for i in range(1, 31)])
         essential_roles = set([Role(i) for i in range(1, 10)])
-        students = set([Student(i) for i in range(1, 5)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 5)])
         calculator = Calculator(roles, students, essential_roles=essential_roles)
 
         # WHEN / THEN
@@ -171,7 +180,7 @@ class TestCalculator(unittest.TestCase):
                 (roles[3], roles[4]),
             ]
         )
-        students = set([Student(i) for i in range(1, 6)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 6)])
         calculator = Calculator(
             set(roles),
             students,
