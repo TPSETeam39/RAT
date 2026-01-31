@@ -2,7 +2,6 @@ from ..calculator import Calculator
 from rat.io import (
     Student,
     Role,
-    RoleAssignment,
     RoleCouplingGraph,
     RoleGender,
     GenderVetoOption,

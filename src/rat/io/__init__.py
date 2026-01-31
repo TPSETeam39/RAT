@@ -94,19 +94,6 @@ class Student:
         )
 
 
-@dataclass(frozen=True)
-class RoleAssignment:
-    """
-    This class represents a single assignment of a student to a role.
-    """
-
-    student: Student
-    assigned_role: Role
-
-    def __repr__(self):
-        return f"RoleAssignment: {self.student} -> {self.assigned_role}"
-
-
 class RoleCouplingGraph:
     """
     This class represents the dependencies between roles through an undirected graph.
