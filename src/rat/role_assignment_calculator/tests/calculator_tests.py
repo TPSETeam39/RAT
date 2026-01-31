@@ -11,17 +11,16 @@ from rat.io import (
 import unittest
 
 
-def debug_print_role_assignments(role_assignments: set[RoleAssignment]):
-    for assignment in role_assignments:
-        print(assignment)
+def debug_print_role_assignments(role_assignments: dict[Student, Role]):
+    for student, role in role_assignments.items():
+        print(f"{student} was assigned {role}")
 
 
-def role_is_occupied(role, role_assignments):
-    output = False
-    for assignment in role_assignments:
-        if role == assignment.assigned_role:
+def role_is_occupied(role, role_assignments: dict[Student, Role]):
+    for assigned_role in role_assignments.values():
+        if role == assigned_role:
             return True
-    return output
+    return False
 
 
 class TestCalculator(unittest.TestCase):
@@ -39,11 +38,10 @@ class TestCalculator(unittest.TestCase):
         debug_print_role_assignments(role_assignments_two)
 
         # THEN
-        self.assertTrue(role_assignments_one != set([]))
-        self.assertTrue(role_assignments_two != set([]))
-        reference = set(role_assignments_one)
-        for assignment in role_assignments_two:
-            self.assertTrue(assignment in reference)
+        self.assertTrue(len(role_assignments_one) > 0)
+        self.assertTrue(len(role_assignments_two) > 0)
+        for stud, role in role_assignments_one.items():
+            self.assertTrue(role_assignments_two[stud] == role)
 
     def test_more_roles_than_students(self):
         # GIVEN
@@ -55,7 +53,7 @@ class TestCalculator(unittest.TestCase):
         role_assignments = calculator.calculate_role_assignments()
 
         # THEN
-        self.assertTrue(role_assignments != set([]))
+        self.assertTrue(len(role_assignments) > 0)
         self.check_pairwise_distinct(role_assignments)
         self.check_no_vetoes_were_violated(role_assignments)
 
@@ -69,7 +67,7 @@ class TestCalculator(unittest.TestCase):
         role_assignments = self.calculator.calculate_role_assignments()
 
         # THEN
-        self.assertTrue(role_assignments != set([]))
+        self.assertTrue(len(role_assignments) > 0)
         self.check_pairwise_distinct(role_assignments)
         self.check_no_vetoes_were_violated(role_assignments)
 
@@ -132,7 +130,7 @@ class TestCalculator(unittest.TestCase):
         role_assignments = calculator.calculate_role_assignments()
 
         # THEN
-        self.assertTrue(role_assignments != set([]))
+        self.assertTrue(len(role_assignments) > 0)
         self.check_pairwise_distinct(role_assignments)
         self.check_no_vetoes_were_violated(role_assignments)
 
@@ -147,7 +145,7 @@ class TestCalculator(unittest.TestCase):
         role_assignments = calculator.calculate_role_assignments()
 
         # THEN
-        self.assertTrue(role_assignments != set([]))
+        self.assertTrue(len(role_assignments) > 0)
         self.check_pairwise_distinct(role_assignments)
         self.check_no_vetoes_were_violated(role_assignments)
         self.check_all_essential_roles_were_fulfilled(role_assignments, essential_roles)
@@ -193,38 +191,38 @@ class TestCalculator(unittest.TestCase):
         debug_print_role_assignments(role_assignments)
 
         # THEN
-        self.assertTrue(role_assignments != set([]))
+        self.assertTrue(len(role_assignments) > 0)
         self.check_pairwise_distinct(role_assignments)
         self.check_all_essential_roles_were_fulfilled(role_assignments, essential_roles)
         for n in range(1, 5):
             self.assertTrue(role_is_occupied(roles[n], role_assignments))
 
-    def check_pairwise_distinct(self, role_assignments: set[RoleAssignment]):
-        for a in role_assignments:
-            for b in role_assignments:
-                if a.student != b.student:
+    def check_pairwise_distinct(self, role_assignments: dict[Student, Role]):
+        for stud_a, role_a in role_assignments.items():
+            for stud_b, role_b in role_assignments.items():
+                if stud_a != stud_b:
                     self.assertTrue(
-                        a.assigned_role != b.assigned_role,
-                        f"{a.student} and {b.student}"
-                        f" were both assigned {b.assigned_role}!",
+                        role_a != role_b,
+                        f"{stud_a} and {stud_b}"
+                        f" were both assigned {role_a}!",
                     )
 
-    def check_no_vetoes_were_violated(self, role_assignments: set[RoleAssignment]):
-        for assignment in role_assignments:
+    def check_no_vetoes_were_violated(self, role_assignments: dict[Student, Role]):
+        for stud, role in role_assignments.items():
             vetoed_genders_msg = [
                 vetoed_gender
-                for vetoed_gender in assignment.student.get_vetoed_genders()
+                for vetoed_gender in stud.get_vetoed_genders()
             ]
             self.assertTrue(
-                assignment.assigned_role.gender
-                not in assignment.student.get_vetoed_genders(),
-                f"{assignment.student} was assigned {assignment.assigned_role}, "
+                role.gender
+                not in stud.get_vetoed_genders(),
+                f"{stud} was assigned {role}, "
                 f"but they were against the genders {str(vetoed_genders_msg)}; "
-                f"the role has gender {assignment.assigned_role.gender}",
+                f"the role has gender {role.gender}",
             )
 
     def check_all_essential_roles_were_fulfilled(
-        self, role_assignments: set[RoleAssignment], essential_roles: set[Role]
+        self, role_assignments: dict[Student, Role], essential_roles: set[Role]
     ):
         for essential in essential_roles:
             self.assertTrue(role_is_occupied(essential, role_assignments))

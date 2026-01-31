@@ -117,7 +117,7 @@ class Calculator:
                 relevant_variables.append(self._student_has_role(student, role))
             self.cnf.append(relevant_variables)
 
-    def calculate_role_assignments(self) -> set[RoleAssignment]:
+    def calculate_role_assignments(self) -> dict[Student, Role]:
         if len(self.students) > len(self.roles):
             raise RuntimeError(
                 "There are more roles than students! An assignment is obviously impossible!"
@@ -133,18 +133,20 @@ class Calculator:
                 return self._interpret_model(solver.get_model())
             else:
                 print("Role Assignment Could Not Be Found")
-                return set([])
+                return {}
 
-    def _interpret_model(self, model) -> set[RoleAssignment]:
+    def _interpret_model(self, model) -> dict[Student, Role]:
         role_assignments = []
         for variable in model:
             if variable > 0:
                 role_assignments.append(self.variable_pool.obj(variable))
 
-        output = set([])
+        output = {}
         for ra in role_assignments:
-            # The variable pool has a mapping of integer IDs to the tuple defined in assign(s, r)
-            output.add(RoleAssignment(ra[0], ra[1]))
+            # The variable pool has a mapping of integer IDs to the tuple defined in _student_has_role(s, r)
+            student = ra[0]
+            role = ra[1]
+            output[student] = role
         return output
 
     def _get_roles_with_gender(self, vetoed_gender: RoleGender):
