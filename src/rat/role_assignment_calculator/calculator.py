@@ -2,8 +2,7 @@ from pysat.card import CardEnc, EncType
 from pysat.formula import IDPool, CNFPlus
 from pysat.solvers import Solver
 
-from .calculator_io import Role, Student, RoleAssignment, RoleCouplingGraph
-from .genders import Gender
+from rat.io import Role, Student, RoleCouplingGraph, RoleGender
 
 
 class Calculator:
@@ -21,10 +20,10 @@ class Calculator:
         self._fill_variable_pool(roles, students)
 
         self._roles_with_gender = {
-            Gender.NON_BINARY: self._get_roles_with_gender(Gender.NON_BINARY),
-            Gender.NEUTRAL: self._get_roles_with_gender(Gender.NEUTRAL),
-            Gender.MALE: self._get_roles_with_gender(Gender.MALE),
-            Gender.FEMALE: self._get_roles_with_gender(Gender.FEMALE),
+            RoleGender.NON_BINARY: self._get_roles_with_gender(RoleGender.NON_BINARY),
+            RoleGender.NEUTRAL: self._get_roles_with_gender(RoleGender.NEUTRAL),
+            RoleGender.MALE: self._get_roles_with_gender(RoleGender.MALE),
+            RoleGender.FEMALE: self._get_roles_with_gender(RoleGender.FEMALE),
         }
 
         self.cnf = CNFPlus()
@@ -81,7 +80,7 @@ class Calculator:
         """
         output = []
         for this_student in self.students:
-            for vetoed_gender in this_student.vetoed_genders:
+            for vetoed_gender in this_student.get_vetoed_genders():
                 for vetoed_role in self._roles_with_gender[vetoed_gender]:
                     output.append(
                         -1 * self._student_has_role(this_student, vetoed_role)
@@ -118,7 +117,7 @@ class Calculator:
                 relevant_variables.append(self._student_has_role(student, role))
             self.cnf.append(relevant_variables)
 
-    def calculate_role_assignments(self) -> set[RoleAssignment]:
+    def calculate_role_assignments(self) -> dict[Student, Role]:
         if len(self.students) > len(self.roles):
             raise RuntimeError(
                 "There are more roles than students! An assignment is obviously impossible!"
@@ -134,23 +133,25 @@ class Calculator:
                 return self._interpret_model(solver.get_model())
             else:
                 print("Role Assignment Could Not Be Found")
-                return set([])
+                return {}
 
-    def _interpret_model(self, model) -> set[RoleAssignment]:
+    def _interpret_model(self, model) -> dict[Student, Role]:
         role_assignments = []
         for variable in model:
             if variable > 0:
                 role_assignments.append(self.variable_pool.obj(variable))
 
-        output = set([])
+        output = {}
         for ra in role_assignments:
-            # The variable pool has a mapping of integer IDs to the tuple defined in assign(s, r)
-            output.add(RoleAssignment(ra[0], ra[1]))
+            # The variable pool has a mapping of integer IDs to the tuple defined in _student_has_role(s, r)
+            student = ra[0]
+            role = ra[1]
+            output[student] = role
         return output
 
-    def _get_roles_with_gender(self, vetoed_gender: Gender):
+    def _get_roles_with_gender(self, vetoed_gender: RoleGender):
         output = []
         for role in self.roles:
             if role.gender == vetoed_gender:
                 output.append(role)
-        return output
+        return set(output)
