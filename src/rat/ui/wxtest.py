@@ -1,7 +1,6 @@
 import wx
-import wx.dataview
 
-from rat.io import Gender, Student, Role, GenderVetoOption
+from rat.io import StudentGender, RoleGender, Student, Role, GenderVetoOption
 from rat.role_assignment_calculator.calculator import Calculator
 from .editor import StudentInfoEditorPanel
 from .output import OutputPanel
@@ -25,49 +24,48 @@ class TestWindow(wx.Frame):
         test_menu = wx.Menu()
         test_menu.Append(0, "Hi")
         self.menu_bar.Append(test_menu, "&Test")
-
         self.SetMenuBar(self.menu_bar)
 
         self.panel = wx.Panel(self)
         
-        #main_sizer = wx.FlexGridSizer(2, 10, 10)
-        top_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.test_button = wx.Button(self.panel, label="Press me!")
 
-        #self.label = wx.StaticText(self.panel, label="Hi from wxPython!")
-        #main_sizer.Add(self.label)
+        self.student_editor = StudentInfoEditorPanel(self.panel)
 
-        self.button = wx.Button(self.panel, label="Press me!")
-        self.Bind(wx.EVT_BUTTON, self.on_button, self.button)
-        main_sizer.Add(self.button)
+        # self.role_editor = StudentInfoEditorPanel(self.panel) # TODO: use role editor
 
-        self.test = StudentInfoEditorPanel(self.panel)
-        #self.test.BackgroundColour = wx.RED
-        #self.test.SetMinSize((500, 200))
-        main_sizer.Add(self.test, 1, wx.EXPAND | wx.ALL)
+        self.output_display = OutputPanel(self.panel)
 
-        self.test2 = StudentInfoEditorPanel(self.panel)
-        #self.test2.BackgroundColour = wx.BLUE
-        main_sizer.Add(self.test2, 1, wx.EXPAND | wx.ALL)
-        top_sizer.Add(main_sizer, 1, wx.EXPAND | wx.ALL)
-
-        self.test3 = OutputPanel(self.panel)
-        top_sizer.Add(self.test3, 1, wx.EXPAND | wx.ALL)
-
-        self.panel.SetSizerAndFit(top_sizer)
-        self.Fit()
+        self._init_layout()
+        self._bind_event_handlers()
     
-    def on_button(self, event: wx.Event):
+    def _init_layout(self):
+        upper_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        upper_sizer.Add(self.test_button)
+        upper_sizer.Add(self.student_editor, 1, wx.EXPAND | wx.ALL)
+        # upper_sizer.Add(self.role_editor, 1, wx.EXPAND | wx.ALL)
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(upper_sizer, 1, wx.EXPAND | wx.ALL)
+        main_sizer.Add(self.output_display, 1, wx.EXPAND | wx.ALL)
+
+        self.panel.SetSizerAndFit(main_sizer)
+        self.Fit()
+
+    def _bind_event_handlers(self):
+        self.Bind(wx.EVT_BUTTON, self._on_button, self.test_button)
+    
+    def _on_button(self, event: wx.Event):
         roles = set()
         for i in range(0, 30):
-            roles.add(Role(i, f"Role {i}", Gender.MALE))
+            roles.add(Role(i, f"Role {i}", RoleGender.MALE))
 
         students = set()
-        for student in self.test.get_students():
-            students.add(Student(student.id, student.first_name, student.last_name, GenderVetoOption.MALE_ONLY, Gender.NON_BINARY))
+        for student in self.student_editor.get_students():
+            students.add(Student(student.id, StudentGender.NON_BINARY, student.first_name, student.last_name, GenderVetoOption.NO_VETOES))
         
         calc = Calculator(roles, students)
         assignments = calc.calculate_role_assignments()
 
-        self.test3.clear()
-        self.test3.load_group("Test Group 1", assignments)
+        self.output_display.clear()
+        self.output_display.load_group("Group 1", assignments)
