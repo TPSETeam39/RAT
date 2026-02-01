@@ -4,6 +4,10 @@ import wx.dataview
 from rat.io import Student, Role
 
 class OutputPanel(wx.Panel):
+    """
+    A simple output display for student-to-role assignments, grouped and displayed as a tree.
+    """
+
     COL_ID = 0
     COL_LAST_NAME = 1
     COL_FIRST_NAME = 2
@@ -30,9 +34,20 @@ class OutputPanel(wx.Panel):
         pass
 
     def clear(self):
+        """
+        Clears all elements from the output display.
+        """
         self.list.DeleteAllItems()
 
     def load_group(self, group_name: str, assignments: dict[Student, Role]):
+        """
+        Loads a list of assignments into the output display as a group.
+        
+        :param group_name: The name of the group.
+        :type group_name: str
+        :param assignments: The student-to-role assignments for the group.
+        :type assignments: dict[Student, Role]
+        """
         group_root = self.list.AppendItem(self.list.RootItem, group_name)
 
         for student, role in assignments.items():
