@@ -17,7 +17,7 @@ class OutputPanel(wx.Panel):
         super().__init__(parent)
         
         self.list = wx.dataview.TreeListCtrl(self)
-        self.list.AppendColumn("ID", flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
+        self.list.AppendColumn("Student ID", flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
         self.list.AppendColumn("Last Name", flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
         self.list.AppendColumn("First Name", flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
         self.list.AppendColumn("Role", flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
