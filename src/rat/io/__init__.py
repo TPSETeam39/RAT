@@ -1,7 +1,50 @@
 from dataclasses import dataclass
 from typing import Tuple
 
-from .genders import Gender, GenderVetoOption, get_set_from_gender_veto_option
+from enum import StrEnum, IntEnum
+
+
+class StudentGender(StrEnum):
+    FEMALE = "FEMALE"
+    MALE = "MALE"
+    NON_BINARY = "NON-BINARY"
+
+
+class RoleGender(StrEnum):
+    FEMALE = "FEMALE"
+    MALE = "MALE"
+    NON_BINARY = "NON-BINARY"
+    NEUTRAL = "NEUTRAL"
+
+
+class GenderVetoOption(IntEnum):
+    NON_BINARY_ONLY = 0
+    MALE_ONLY = 1
+    FEMALE_ONLY = 2
+    MALE_AND_NON_BINARY = 3
+    FEMALE_AND_NON_BINARY = 4
+    FEMALE_AND_MALE = 5
+    NO_VETOES = 6
+
+
+def get_set_from_gender_veto_option(
+    gender_veto_option: GenderVetoOption,
+) -> set[RoleGender]:
+    match gender_veto_option:
+        case GenderVetoOption.NON_BINARY_ONLY:
+            return {RoleGender.NON_BINARY}
+        case GenderVetoOption.MALE_ONLY:
+            return {RoleGender.MALE}
+        case GenderVetoOption.FEMALE_ONLY:
+            return {RoleGender.FEMALE}
+        case GenderVetoOption.MALE_AND_NON_BINARY:
+            return {RoleGender.MALE, RoleGender.NON_BINARY}
+        case GenderVetoOption.FEMALE_AND_NON_BINARY:
+            return {RoleGender.FEMALE, RoleGender.NON_BINARY}
+        case GenderVetoOption.FEMALE_AND_MALE:
+            return {RoleGender.FEMALE, RoleGender.MALE}
+        case GenderVetoOption.NO_VETOES:
+            return set([])
 
 
 @dataclass(frozen=True)
@@ -11,8 +54,12 @@ class Role:
     The gender of a role is neutral by default.
     """
 
-    name: str
-    gender: Gender = Gender.NEUTRAL
+    id: int
+    name: str = "NONAME"
+    gender: RoleGender = RoleGender.NEUTRAL
+
+    def __repr__(self):
+        return f"Role ({self.id}) {self.name}: gender={self.gender}"
 
 
 @dataclass(frozen=True)
@@ -22,9 +69,11 @@ class Student:
     Every student prefers gender-neutral roles by default; he also has no gender vetoes by default.
     """
 
-    name: str
+    id: int
+    gender: StudentGender
+    first_name: str = "NONAME"
+    last_name: str = "NONAME"
     gender_veto_option: GenderVetoOption = GenderVetoOption.NO_VETOES
-    preferred_gender: Gender = Gender.NEUTRAL
 
     def __post_init__(self):
         object.__setattr__(
@@ -33,18 +82,16 @@ class Student:
             get_set_from_gender_veto_option(self.gender_veto_option),
         )
 
-    def get_vetoed_genders(self):
+    def get_vetoed_genders(self) -> set[RoleGender]:
         return self.vetoed_genders
 
-
-@dataclass(frozen=True)
-class RoleAssignment:
-    """
-    This class represents a single assignment of a student to a role.
-    """
-
-    student: Student
-    assigned_role: Role
+    def __repr__(self):
+        return (
+            f"Student ({self.id}) "
+            f"{self.first_name} {self.last_name}: "
+            f"veto_option={self.gender_veto_option.name}, "
+            f"preferred_gender={str(self.gender)}"
+        )
 
 
 class RoleCouplingGraph:
