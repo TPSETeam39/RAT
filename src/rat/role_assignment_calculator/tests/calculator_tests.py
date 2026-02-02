@@ -58,8 +58,8 @@ class TestCalculator(unittest.TestCase):
 
     def test_equal_number_of_students_and_roles(self):
         # GIVEN
-        roles = set([Role(i) for i in range(1, 5)])
-        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 5)])
+        roles = set([Role(i) for i in range(1, 35)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 35)])
         self.calculator = Calculator(roles, students)
 
         # WHEN
@@ -202,15 +202,28 @@ class TestCalculator(unittest.TestCase):
 
     def test_preference_for_own_gender(self):
         # GIVEN
-        r = range(0, 5)
-        male_roles = [Role(i, gender=RoleGender.MALE) for i in r]
-        female_roles = [Role(i, gender=RoleGender.FEMALE) for i in r]
-        non_binary_roles = [Role(i, gender=RoleGender.NON_BINARY) for i in r]
-        gender_neutral_roles = [Role(i, gender=RoleGender.NEUTRAL) for i in r]
+        r = range(0, 10)
+        male_roles = [Role(i, name=f"MaleRole{i}", gender=RoleGender.MALE) for i in r]
+        female_roles = [
+            Role(i, name=f"FemaleRole{i}", gender=RoleGender.FEMALE) for i in r
+        ]
+        non_binary_roles = [
+            Role(i, name=f"NonBinaryRole{i}", gender=RoleGender.NON_BINARY) for i in r
+        ]
+        gender_neutral_roles = [
+            Role(i, name=f"GenderNeutralRole{i}", gender=RoleGender.NEUTRAL) for i in r
+        ]
 
-        male_students = [Student(i, gender=StudentGender.MALE) for i in r]
-        female_students = [Student(i, gender=StudentGender.FEMALE) for i in r]
-        non_binary_students = [Student(i, gender=StudentGender.NON_BINARY) for i in r]
+        male_students = [
+            Student(i, first_name=f"Male{i}", gender=StudentGender.MALE) for i in r
+        ]
+        female_students = [
+            Student(i, first_name=f"Female{i}", gender=StudentGender.FEMALE) for i in r
+        ]
+        non_binary_students = [
+            Student(i, first_name=f"NonBinary{i}", gender=StudentGender.NON_BINARY)
+            for i in r
+        ]
 
         all_roles = (
             set(male_roles)
@@ -260,14 +273,19 @@ class TestCalculator(unittest.TestCase):
 
     def test_preference_for_neutral_gender(self):
         # GIVEN
-        r = range(0, 5)
-        male_roles = [Role(i, gender=RoleGender.MALE) for i in r]
-        non_binary_roles = [Role(i, gender=RoleGender.NON_BINARY) for i in r]
-        gender_neutral_roles = [Role(i, gender=RoleGender.NEUTRAL) for i in r]
+        r = range(0, 15)
+        male_roles = [Role(i, name=f"MaleRole{i}", gender=RoleGender.MALE) for i in r]
+        non_binary_roles = [
+            Role(i, name=f"NonBinaryRole{i}", gender=RoleGender.NON_BINARY) for i in r
+        ]
+        gender_neutral_roles = [
+            Role(i, name=f"GenderNeutralRole{i}", gender=RoleGender.NEUTRAL) for i in r
+        ]
 
         female_students = [
             Student(
                 i,
+                first_name=f"Female{i}",
                 gender=StudentGender.FEMALE,
                 gender_veto_option=GenderVetoOption.MALE_ONLY,
             )
@@ -276,7 +294,8 @@ class TestCalculator(unittest.TestCase):
         non_binary_students = [
             Student(
                 i,
-                gender=StudentGender.FEMALE,
+                first_name=f"NonBinary{i}",
+                gender=StudentGender.NON_BINARY,
                 gender_veto_option=GenderVetoOption.MALE_ONLY,
             )
             for i in r
