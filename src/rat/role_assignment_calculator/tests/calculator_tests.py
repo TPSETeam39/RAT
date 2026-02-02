@@ -34,7 +34,6 @@ class TestCalculator(unittest.TestCase):
         # WHEN
         role_assignments_one = calculator_one.calculate_role_assignments()
         role_assignments_two = calculator_two.calculate_role_assignments()
-        debug_print_role_assignments(role_assignments_two)
 
         # THEN
         self.assertTrue(len(role_assignments_one) > 0)
@@ -53,20 +52,23 @@ class TestCalculator(unittest.TestCase):
 
         # THEN
         self.assertTrue(len(role_assignments) > 0)
+        self.check_all_students_got_a_role(students, role_assignments)
         self.check_pairwise_distinct(role_assignments)
         self.check_no_vetoes_were_violated(role_assignments)
 
     def test_equal_number_of_students_and_roles(self):
         # GIVEN
-        roles = set([Role(i) for i in range(1, 31)])
-        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 31)])
+        roles = set([Role(i) for i in range(1, 5)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 5)])
         self.calculator = Calculator(roles, students)
 
         # WHEN
         role_assignments = self.calculator.calculate_role_assignments()
+        debug_print_role_assignments(role_assignments)
 
         # THEN
         self.assertTrue(len(role_assignments) > 0)
+        self.check_all_students_got_a_role(students, role_assignments)
         self.check_pairwise_distinct(role_assignments)
         self.check_no_vetoes_were_violated(role_assignments)
 
@@ -81,11 +83,13 @@ class TestCalculator(unittest.TestCase):
 
     def test_gender_vetoes(self):
         # GIVEN
-        gender_neutral_roles = set([Role(i) for i in range(1, 16)])
-        male_roles = set([Role(i, gender=RoleGender.MALE) for i in range(1, 16)])
-        female_roles = set([Role(i, gender=RoleGender.FEMALE) for i in range(1, 16)])
+        gender_neutral_roles = set(
+            [Role(i, gender=RoleGender.NEUTRAL) for i in range(1, 5)]
+        )
+        male_roles = set([Role(i, gender=RoleGender.MALE) for i in range(1, 5)])
+        female_roles = set([Role(i, gender=RoleGender.FEMALE) for i in range(1, 5)])
         non_binary_roles = set(
-            [Role(i, gender=RoleGender.NON_BINARY) for i in range(1, 16)]
+            [Role(i, gender=RoleGender.NON_BINARY) for i in range(1, 5)]
         )
 
         males = set(
@@ -95,7 +99,7 @@ class TestCalculator(unittest.TestCase):
                     gender=StudentGender.MALE,
                     gender_veto_option=GenderVetoOption.FEMALE_ONLY,
                 )
-                for i in range(1, 16)
+                for i in range(1, 5)
             ]
         )
         females = set(
@@ -105,7 +109,7 @@ class TestCalculator(unittest.TestCase):
                     gender=StudentGender.FEMALE,
                     gender_veto_option=GenderVetoOption.MALE_ONLY,
                 )
-                for i in range(1, 16)
+                for i in range(1, 5)
             ]
         )
         non_binaries = set(
@@ -115,7 +119,7 @@ class TestCalculator(unittest.TestCase):
                     gender=StudentGender.NON_BINARY,
                     gender_veto_option=GenderVetoOption.FEMALE_AND_MALE,
                 )
-                for i in range(1, 16)
+                for i in range(1, 5)
             ]
         )
         calculator = Calculator(
@@ -196,25 +200,130 @@ class TestCalculator(unittest.TestCase):
         for n in range(1, 5):
             self.assertTrue(role_is_occupied(roles[n], role_assignments))
 
+    def test_preference_for_own_gender(self):
+        # GIVEN
+        r = range(0, 5)
+        male_roles = [Role(i, gender=RoleGender.MALE) for i in r]
+        female_roles = [Role(i, gender=RoleGender.FEMALE) for i in r]
+        non_binary_roles = [Role(i, gender=RoleGender.NON_BINARY) for i in r]
+        gender_neutral_roles = [Role(i, gender=RoleGender.NEUTRAL) for i in r]
+
+        male_students = [Student(i, gender=StudentGender.MALE) for i in r]
+        female_students = [Student(i, gender=StudentGender.FEMALE) for i in r]
+        non_binary_students = [Student(i, gender=StudentGender.NON_BINARY) for i in r]
+
+        all_roles = (
+            set(male_roles)
+            .union(set(female_roles))
+            .union(non_binary_roles)
+            .union(gender_neutral_roles)
+        )
+        all_students = (
+            set(male_students)
+            .union(set(female_students))
+            .union(set(non_binary_students))
+        )
+        calculator = Calculator(
+            all_roles,
+            all_students,
+        )
+
+        # WHEN
+        role_assignments = calculator.calculate_role_assignments()
+        debug_print_role_assignments(role_assignments)
+
+        # THEN
+        self.assertTrue(len(role_assignments) > 0)
+        self.check_all_students_got_a_role(all_students, role_assignments)
+        self.check_pairwise_distinct(role_assignments)
+        self.assertTrue(
+            all(role_is_occupied(m_role, role_assignments) for m_role in male_roles)
+        )
+        self.assertTrue(
+            all(
+                role_is_occupied(fem_role, role_assignments)
+                for fem_role in female_roles
+            )
+        )
+        self.assertTrue(
+            all(
+                role_is_occupied(non_bin_role, role_assignments)
+                for non_bin_role in non_binary_roles
+            )
+        )
+        self.assertTrue(
+            all(
+                not role_is_occupied(neut_role, role_assignments)
+                for neut_role in gender_neutral_roles
+            )
+        )
+
+    def test_preference_for_neutral_gender(self):
+        # GIVEN
+        r = range(0, 5)
+        male_roles = [Role(i, gender=RoleGender.MALE) for i in r]
+        non_binary_roles = [Role(i, gender=RoleGender.NON_BINARY) for i in r]
+        gender_neutral_roles = [Role(i, gender=RoleGender.NEUTRAL) for i in r]
+
+        female_students = [
+            Student(
+                i,
+                gender=StudentGender.FEMALE,
+                gender_veto_option=GenderVetoOption.MALE_ONLY,
+            )
+            for i in r
+        ]
+        non_binary_students = [
+            Student(
+                i,
+                gender=StudentGender.FEMALE,
+                gender_veto_option=GenderVetoOption.MALE_ONLY,
+            )
+            for i in r
+        ]
+
+        all_roles = (
+            set(male_roles)
+            .union(set(non_binary_roles))
+            .union(set(gender_neutral_roles))
+        )
+        all_students = set(female_students).union(non_binary_students)
+        calculator = Calculator(all_roles, all_students)
+
+        # WHEN
+        role_assignments = calculator.calculate_role_assignments()
+        debug_print_role_assignments(role_assignments)
+
+        # THEN
+        self.assertTrue(len(role_assignments) > 0)
+        self.check_all_students_got_a_role(all_students, role_assignments)
+        self.check_pairwise_distinct(role_assignments)
+        self.check_no_vetoes_were_violated(role_assignments)
+        self.assertTrue(
+            all(not role_is_occupied(m_role, role_assignments) for m_role in male_roles)
+        )
+        for student, role in role_assignments.items():
+            if student.gender == StudentGender.FEMALE:
+                self.assertTrue(role.gender == RoleGender.NEUTRAL)
+            if student.gender == StudentGender.NON_BINARY:
+                self.assertTrue(role.gender == RoleGender.NON_BINARY)
+
     def check_pairwise_distinct(self, role_assignments: dict[Student, Role]):
         for stud_a, role_a in role_assignments.items():
             for stud_b, role_b in role_assignments.items():
                 if stud_a != stud_b:
                     self.assertTrue(
                         role_a != role_b,
-                        f"{stud_a} and {stud_b}"
-                        f" were both assigned {role_a}!",
+                        f"{stud_a} and {stud_b}" f" were both assigned {role_a}!",
                     )
 
     def check_no_vetoes_were_violated(self, role_assignments: dict[Student, Role]):
         for stud, role in role_assignments.items():
             vetoed_genders_msg = [
-                vetoed_gender
-                for vetoed_gender in stud.get_vetoed_genders()
+                vetoed_gender for vetoed_gender in stud.get_vetoed_genders()
             ]
             self.assertTrue(
-                role.gender
-                not in stud.get_vetoed_genders(),
+                role.gender not in stud.get_vetoed_genders(),
                 f"{stud} was assigned {role}, "
                 f"but they were against the genders {str(vetoed_genders_msg)}; "
                 f"the role has gender {role.gender}",
@@ -225,6 +334,15 @@ class TestCalculator(unittest.TestCase):
     ):
         for essential in essential_roles:
             self.assertTrue(role_is_occupied(essential, role_assignments))
+
+    def check_all_students_got_a_role(
+        self, students: set[Student], role_assignments: dict[Student, Role]
+    ):
+        for s in students:
+            self.assertTrue(
+                role_assignments.get(s, None) is not None,
+                f"{s} wasn't assigned a role!",
+            )
 
 
 if __name__ == "__main__":
