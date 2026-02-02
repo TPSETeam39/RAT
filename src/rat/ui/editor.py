@@ -13,7 +13,7 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
     COL_LAST_NAME = 1
     COL_FIRST_NAME = 2
     COL_GENDER = 3
-    COL_VETOS = 4
+    COL_VETOES = 4
 
     # item with ID 0 (an invalid ID) is the root here
     ROOT_ITEM = wx.dataview.DataViewItem(0)
@@ -77,7 +77,7 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
                 return student.first_name
             case self.COL_GENDER:
                 return self.GENDER_MAP[student.gender]
-            case self.COL_VETOS:
+            case self.COL_VETOES:
                 return self._vetoes_to_string(student.get_vetoed_genders())
             case _:
                 raise Exception("invalid column")
@@ -95,7 +95,7 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
                 self.students[id] = replace(self.students[id], first_name=variant)
             case self.COL_GENDER:
                 self.students[id] = replace(self.students[id], gender=self.inv_gender_map[variant])
-            case self.COL_VETOS:
+            case self.COL_VETOES:
                 self.students[id] = replace(self.students[id], gender_veto_option=self.GENDER_VETO_OPTION_MAP[frozenset(self._vetoes_from_string(variant))])
             case _:
                 raise Exception("invalid column")
@@ -126,7 +126,7 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
     
     def dv_item_to_student_id(self, item: wx.dataview.DataViewItem) -> int:
         if item == self.ROOT_ITEM:
-            raise Exception(f"root item doesn't have a student id")
+            raise Exception("root item doesn't have a student id")
 
         # student id is one less than the item id, because 0 is an invalid item
         return int(item.ID) - 1
@@ -228,9 +228,9 @@ class StudentInfoEditorPanel(wx.Panel):
                                                       self.model.get_gender_choices(),
                                                       StudentInfoDataViewModel.COL_GENDER))
         self.dataview.AppendColumn(
-            StudentInfoEditorPanel._make_choice_column("Vetos",
+            StudentInfoEditorPanel._make_choice_column("Vetoes",
                                                             self.model.get_vetoes_choices(),
-                                                            StudentInfoDataViewModel.COL_VETOS))
+                                                            StudentInfoDataViewModel.COL_VETOES))
 
     def _make_text_column(title: str, model_column: int) -> wx.dataview.DataViewColumn:
         return wx.dataview.DataViewColumn(title, wx.dataview.DataViewTextRenderer(mode=wx.dataview.DATAVIEW_CELL_EDITABLE), model_column, width=120, flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
