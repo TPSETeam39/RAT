@@ -34,8 +34,7 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
     _ROLE_GENDER_MAP = {
         RoleGender.FEMALE: "Female",
         RoleGender.MALE: "Male",
-        RoleGender.NON_BINARY: "Non-Binary",
-        RoleGender.NEUTRAL: "Neutral"
+        RoleGender.NON_BINARY: "Non-Binary"
     }
 
     _GENDER_VETO_OPTION_MAP = {
