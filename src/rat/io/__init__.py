@@ -17,6 +17,13 @@ class RoleGender(StrEnum):
     NEUTRAL = "NEUTRAL"
 
 
+STUDENT_TO_ROLE_GENDER_MAP = {
+    StudentGender.FEMALE: RoleGender.FEMALE,
+    StudentGender.MALE: RoleGender.MALE,
+    StudentGender.NON_BINARY: RoleGender.NON_BINARY,
+}
+
+
 class GenderVetoOption(IntEnum):
     NON_BINARY_ONLY = 0
     MALE_ONLY = 1
