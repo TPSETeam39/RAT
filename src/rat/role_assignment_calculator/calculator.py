@@ -48,12 +48,13 @@ class Calculator:
         every student must have exactly one role.
         """
         for student in self.students:
-            relevant_variables = []
+            at_most_one = []
+            at_least_one = []
             for role in self.roles:
-                relevant_variables.append(self._student_has_role(student, role))
-            self.cnf.extend(
-                CardEnc.equals(lits=relevant_variables, encoding=EncType.pairwise)
-            )
+                at_most_one.append(self._student_has_role(student, role))
+                at_least_one.append(-1 * self._student_has_role(student, role))
+            self.cnf.append([at_most_one, 1], True)
+            self.cnf.append([at_least_one, len(self.roles) - 1], True)
 
     def _students_have_pairwise_different_roles(self):
         """
@@ -61,16 +62,10 @@ class Calculator:
         the roles of students must be pairwise different.
         """
         for this_role in self.roles:
-            for this_student in self.students:
-                for other_student in self.students:
-                    if this_student != other_student:
-                        # this_student has this_role implies not(other_student has this role)
-                        self.cnf.append(
-                            [
-                                -1 * self._student_has_role(this_student, this_role),
-                                -1 * self._student_has_role(other_student, this_role),
-                            ]
-                        )
+            at_most_one = []
+            for student in self.students:
+                at_most_one.append(self._student_has_role(student, this_role))
+            self.cnf.append([at_most_one, 1], True)
 
     def _take_gender_vetoes_into_account(self):
         """
@@ -126,7 +121,7 @@ class Calculator:
             raise RuntimeError(
                 "There are more essential roles than students! An assignment is obviously impossible!"
             )
-        with Solver(name="glucose3", bootstrap_with=self.cnf.clauses) as solver:
+        with Solver(name="gluecard4", bootstrap_with=self.cnf) as solver:
             sat = solver.solve(assumptions=self._take_gender_vetoes_into_account())
             if sat:
                 print("Role Assignment Found")
@@ -155,3 +150,6 @@ class Calculator:
             if role.gender == vetoed_gender:
                 output.append(role)
         return set(output)
+
+    def _enforce_role_group_cardinalities(self):
+        pass
