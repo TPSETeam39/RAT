@@ -62,7 +62,7 @@ class TestWindow(wx.Frame):
 
         students = set()
         for student in self.student_editor.get_students():
-            students.add(Student(student.id, StudentGender.NON_BINARY, student.first_name, student.last_name, GenderVetoOption.NO_VETOES))
+            students.add(student)
         
         calc = Calculator(roles, students)
         assignments = calc.calculate_role_assignments()
