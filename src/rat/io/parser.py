@@ -1,6 +1,8 @@
 import json
 import os
 
+from io.__init__ import Student
+
 class survey_parser:
     def __init__(self, file_path):
         self.file_path = file_path
@@ -45,19 +47,53 @@ class survey_parser:
             
             # finding out which column map to use
             sample_entry = responses[0] if len(responses) > 0 else {}
-            if "Antwort ID" in sample_entry:
-                self.column_map_used = self.column_map_2
-            else:
-                self.column_map_used = self.column_map_1
+            match sample_entry:
+                case {"Antwort ID": _}:
+                    self.column_map_used = self.column_map_2
+                case {"id": _}:
+                    self.column_map_used = self.column_map_1
+                case _:
+                    return "Parsing error: Unknown survey format."
 
             for entry in responses:
-                #extract only the keys we care about
-                filtered_entry = {
-                    # KNF Key NOT FOUND DEBUG PRINT in case of missing keys, check mapping correctness
-                    self.column_map_used[k]: entry.get(k, "KNF")
-                    for k in self.column_map_used
-                }
-                self.parsed_data.append(filtered_entry)
+                # determining veto options
+                veto_m = True if entry.get(self.column_map_used[4], "Nein") == "Ja" else False,
+                veto_f = True if entry.get(self.column_map_used[5], "Nein") == "Ja" else False,
+                veto_nb = True if entry.get(self.column_map_used[6], "Nein") == "Ja" else False,
+                
+                veto_option = "6" # default no vetoes
+                if veto_m and not veto_f and not veto_nb:
+                    veto_option="1" # male
+                elif not veto_m and veto_f and not veto_nb: 
+                    veto_option="2" # female
+                elif not veto_m and not veto_f and veto_nb: 
+                    veto_option="0" # non-binary
+                elif veto_m and not veto_f and veto_nb: 
+                    veto_option="3" # male and non-binary
+                elif not veto_m and veto_f and veto_nb: 
+                    veto_option="4" # female and non-binary
+
+                # parsing the survey data into student objects
+                student_new = Student(
+                    
+                    last_name=entry.get(self.column_map_used[2], "N/A"),
+                    first_name=entry.get(self.column_map_used[1], "N/A"),
+                    id=entry.get(self.column_map_used[0], -1),
+                    gender=entry.get(self.column_map_used[3], "N/A"),
+                    gender_veto_option=veto_option,
+                )
+                # checking if student already exists in parsed data
+                if any(s.last_name == student_new.last_name and s.first_name == student_new.first_name for s in self.parsed_data):
+                    # old entry will be deleted
+                    self.parsed_data.pop(
+                        self.parsed_data.index(
+                            next(
+                                    s for s in self.parsed_data if s.last_name == student_new.last_name and s.first_name == student_new.first_name
+                                )
+                            )
+                        )
+                # putting students into the parsed data list
+                self.parsed_data.append(student_new)
 
             return f"Parsed {len(self.parsed_data)} survey responses."
         except Exception as e:
