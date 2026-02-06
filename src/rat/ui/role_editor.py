@@ -10,21 +10,28 @@ from rat.io import RoleGender
 
 ROOT = wx.dataview.DataViewItem(0)
 
-
 # Imports for Role Editor
 Role: TypeAlias = IoRole
 
 
-# Data model for the Role Editor
 class RoleEditorDataViewModel(wx.dataview.DataViewModel):
     """
-    List model for roles shown in the Role Editor.
+    The DataViewModel used by the role editor.
+
+    Stores roles with ID, name and gender.
+    Roles can be added, removed and edited.
     """
+
     COL_ID = 0
     COL_NAME = 1
     COL_GENDER = 2
 
     def __init__(self, warn: Optional[Callable[[str], None]] = None):
+        """
+        Create a new role model.
+
+        :param warn: Callback used to show validation warnings.
+        """
         super().__init__()
 
         self.roles: dict[int, Role] = {}
@@ -45,27 +52,30 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
 
         self.warn = warn or (lambda _msg: None)
 
+        # caches for fast duplicate checks
         self._names_present: set[str] = set()
         self._name_by_id: dict[int, str] = {}
 
     def _normalize_name(self, name: str) -> str:
         """
         Normalize a role name for duplicate checking.
+
+        :param name: The role name.
+        :return: Normalized name.
         """
         return name.casefold()
 
-    # DataViewModel implementation (list model)
     @override
     def IsContainer(self, item: wx.dataview.DataViewItem) -> bool:
         """
-        Only ROOT is a container.
+        Returns True only for ROOT (list model).
         """
         return not item.IsOk()
 
     @override
     def GetParent(self, item: wx.dataview.DataViewItem) -> wx.dataview.DataViewItem:
         """
-        All items have ROOT as parent.
+        Returns ROOT as parent for all items.
         """
         return ROOT
 
@@ -74,7 +84,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         self, item: wx.dataview.DataViewItem, children: list[wx.dataview.DataViewItem]
     ) -> int:
         """
-        Return all role items as children of ROOT.
+        Adds all role items as children of ROOT.
+
+        :return: Number of children added.
         """
         if not item.IsOk():
             for rid in self.roles.keys():
@@ -85,7 +97,7 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
     @override
     def GetValue(self, item: wx.dataview.DataViewItem, col: int):
         """
-        Return the cell value for the given item and column.
+        Returns the displayed value for the given item and column.
         """
         rid = self.dv_item_to_role_id(item)
         role = self.roles[rid]
@@ -103,7 +115,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
     @override
     def SetValue(self, variant, item: wx.dataview.DataViewItem, col: int) -> bool:
         """
-        Validate and apply an edit. Returns True if accepted.
+        Applies an edit to a role.
+
+        Validates input and returns True if the edit is accepted.
         """
         rid = self.dv_item_to_role_id(item)
         role = self.roles[rid]
@@ -148,10 +162,12 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
             case _:
                 raise Exception("invalid column")
 
-    # Check for duplicate names
     def _make_unique_default_name(self, base: str = "Role") -> str:
         """
-        Return base or 'base N' not used yet.
+        Creates a unique default name like 'Role' or 'Role N'.
+
+        :param base: Base name used for generation.
+        :return: A name not used yet.
         """
         if self._normalize_name(base) not in self._names_present:
             return base
@@ -162,19 +178,21 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
 
     def role_id_to_dv_item(self, rid: int) -> wx.dataview.DataViewItem:
         """
-        Encode role id into a DataViewItem (rid + 1; 0 reserved for ROOT).
+        Converts a role ID to a DataViewItem.
+
+        Uses rid + 1 because 0 is reserved for ROOT.
         """
         return wx.dataview.DataViewItem(rid + 1)
 
     def role_to_dv_item(self, role: Role) -> wx.dataview.DataViewItem:
         """
-        Shortcut: role -> DataViewItem.
+        Converts a role to a DataViewItem.
         """
         return self.role_id_to_dv_item(role.id)
 
     def dv_item_to_role_id(self, item: wx.dataview.DataViewItem) -> int:
         """
-        Decode DataViewItem back to role id.
+        Converts a DataViewItem back to a role ID.
         """
         if not item.IsOk():
             raise Exception("invalid item")
@@ -182,14 +200,16 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
 
     def get_gender_choices(self) -> list[str]:
         """
-        Labels for the gender dropdown.
+        Returns the labels used for the gender dropdown.
         """
         return list(self.gender_value_by_label.keys())
 
-    # Add/remove roles
     def add_role(self, role: Role) -> int:
         """
-        Insert a role, fixing empty/duplicate names, and notify the view.
+        Adds a role to the model and notifies the view.
+
+        Ensures the role name is non-empty and unique.
+        :return: The ID of the added role.
         """
         rid = role.id
         if rid in self.roles:
@@ -214,7 +234,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
 
     def remove_role_by_id(self, rid: int) -> None:
         """
-        Remove a role and notify the view.
+        Removes a role by ID and notifies the view.
+
+        :param rid: Role ID to remove.
         """
         if rid not in self.roles:
             raise Exception(f"role with id {rid} not found")
@@ -228,12 +250,17 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         self.ItemDeleted(ROOT, self.role_id_to_dv_item(rid))
 
 
-# UI Panel for Role Editor
 class RoleEditorPanel(wx.Panel):
     """
-    Panel showing roles in a DataViewCtrl with Add/Delete + context menu.
+    Role editor panel shown as an editable list.
+
+    Roles can be added/removed via buttons or the context menu.
     """
+
     def __init__(self, parent: wx.Window):
+        """
+        Create the role editor UI.
+        """
         super().__init__(parent)
 
         self.model = RoleEditorDataViewModel(warn=self._warn)
@@ -248,13 +275,13 @@ class RoleEditorPanel(wx.Panel):
 
     def _warn(self, message: str) -> None:
         """
-        Show validation warnings from the model.
+        Shows a warning dialog for invalid edits.
         """
         wx.MessageBox(message, "Role Editor", wx.OK | wx.ICON_WARNING, parent=self)
 
     def init_layout(self) -> None:
         """
-        Create layout: table + buttons.
+        Creates the layout: table + Add/Delete buttons.
         """
         top_sizer = wx.BoxSizer(orient=wx.VERTICAL)
         top_sizer.Add(self.dv, 1, wx.EXPAND | wx.ALL, 5)
@@ -272,20 +299,22 @@ class RoleEditorPanel(wx.Panel):
 
     def bind_event_handlers(self) -> None:
         """
-        Bind DataView + button + context menu events.
+        Binds DataView, button and context menu events.
         """
         self.Bind(
             wx.dataview.EVT_DATAVIEW_ITEM_ACTIVATED,
             self.on_dataview_item_activated,
             self.dv,
         )
-        self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.on_context_menu, self.dv)
+        self.Bind(
+            wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.on_context_menu, self.dv
+        )
         self.Bind(wx.EVT_CONTEXT_MENU, self.on_context_menu, self.dv)
         self.Bind(wx.EVT_BUTTON, self.on_button)
 
     def append_columns(self) -> None:
         """
-        Add ID, Name, Gender columns.
+        Adds the ID, Name and Gender columns.
         """
         self.dv.AppendTextColumn("ID", RoleEditorDataViewModel.COL_ID)
         self.dv.AppendColumn(self.make_text_column("Name", RoleEditorDataViewModel.COL_NAME))
@@ -300,7 +329,7 @@ class RoleEditorPanel(wx.Panel):
     @staticmethod
     def make_text_column(title: str, model_column: int) -> wx.dataview.DataViewColumn:
         """
-        Editable text column.
+        Creates an editable text column.
         """
         return wx.dataview.DataViewColumn(
             title,
@@ -315,7 +344,7 @@ class RoleEditorPanel(wx.Panel):
         title: str, choices: list[str], model_column: int
     ) -> wx.dataview.DataViewColumn:
         """
-        Dropdown column.
+        Creates a dropdown column.
         """
         return wx.dataview.DataViewColumn(
             title,
@@ -327,13 +356,15 @@ class RoleEditorPanel(wx.Panel):
 
     def add_role(self, role: Role) -> int:
         """
-        Add a role via the model.
+        Adds a role via the model.
+
+        :return: The ID of the added role.
         """
         return self.model.add_role(role)
 
     def remove_selection(self) -> None:
         """
-        Delete all selected roles.
+        Removes all currently selected roles.
         """
         ids = [self.model.dv_item_to_role_id(item) for item in self.dv.Selections]
         for rid in ids:
@@ -341,7 +372,7 @@ class RoleEditorPanel(wx.Panel):
 
     def on_dataview_item_activated(self, event: wx.dataview.DataViewEvent) -> None:
         """
-        Double-click: edit the activated cell.
+        Starts editing the activated cell (double click).
         """
         item = event.GetItem()
         column = event.GetDataViewColumn()
@@ -350,11 +381,13 @@ class RoleEditorPanel(wx.Panel):
 
     def on_button(self, event: wx.Event) -> None:
         """
-        Handle Add/Delete buttons.
+        Handles Add/Delete button clicks.
         """
         match event.Id:
             case wx.ID_ADD:
-                rid = self.add_role(Role(id=self.model.next_id, name="Role", gender=RoleGender.NEUTRAL))
+                rid = self.add_role(
+                    Role(id=self.model.next_id, name="Role", gender=RoleGender.NEUTRAL)
+                )
                 self.dv.EditItem(
                     self.model.role_id_to_dv_item(rid),
                     self.dv.GetColumn(RoleEditorDataViewModel.COL_NAME),
@@ -366,7 +399,7 @@ class RoleEditorPanel(wx.Panel):
 
     def on_menu(self, event: wx.MenuEvent) -> None:
         """
-        Handle context menu commands.
+        Handles context menu actions.
         """
         match event.Id:
             case wx.ID_DELETE:
@@ -376,7 +409,7 @@ class RoleEditorPanel(wx.Panel):
 
     def on_context_menu(self, event: wx.dataview.DataViewEvent) -> None:
         """
-        Show context menu on right-click.
+        Shows the context menu on right click.
         """
         menu = wx.Menu()
         menu.Append(wx.ID_DELETE, "&Delete")
