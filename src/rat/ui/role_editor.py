@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Optional, override
+from typing import Callable, Optional, TypeAlias, override
 
 import wx
 import wx.dataview
@@ -12,7 +12,7 @@ ROOT = wx.dataview.DataViewItem(0)
 
 
 # Imports for Role Editor
-Role = IoRole
+Role: TypeAlias = IoRole
 
 
 # Data model for the Role Editor
@@ -354,9 +354,7 @@ class RoleEditorPanel(wx.Panel):
         """
         match event.Id:
             case wx.ID_ADD:
-                rid = self.model.next_id
-                self.model.next_id += 1
-                rid = self.add_role(Role(id=rid, name="Role", gender=RoleGender.NEUTRAL))
+                rid = self.add_role(Role(id=self.model.next_id, name="Role", gender=RoleGender.NEUTRAL))
                 self.dv.EditItem(
                     self.model.role_id_to_dv_item(rid),
                     self.dv.GetColumn(RoleEditorDataViewModel.COL_NAME),
