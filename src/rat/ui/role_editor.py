@@ -1,23 +1,25 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, override
+from typing import Callable, Optional, override
 
 import wx
 import wx.dataview
 
-from rat.role_assignment_calculator.genders import Gender
+from rat.io import Role as IoRole
+from rat.io import RoleGender
+
 
 ROOT = wx.dataview.DataViewItem(0)
 
-# Contains data classes and UI panel for Role Editor
-@dataclass
-class Role:
-    id: Optional[int]
-    name: str
-    gender: Gender
+
+# Imports for Role Editor
+Role = IoRole
 
 
 # Data model for the Role Editor
 class RoleEditorDataViewModel(wx.dataview.DataViewModel):
+    """
+    List model for roles shown in the Role Editor.
+    """
     COL_ID = 0
     COL_NAME = 1
     COL_GENDER = 2
@@ -28,15 +30,17 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         self.roles: dict[int, Role] = {}
         self.next_id = 0
 
-        self.gender_label_by_value: dict[Gender, str] = {
-            Gender.FEMALE: "Female",
-            Gender.MALE: "Male",
-            Gender.NON_BINARY: "Non-Binary",
+        self.gender_label_by_value: dict[RoleGender, str] = {
+            RoleGender.FEMALE: "Female",
+            RoleGender.MALE: "Male",
+            RoleGender.NON_BINARY: "Non-Binary",
+            RoleGender.NEUTRAL: "Neutral",
         }
-        self.gender_value_by_label: dict[str, Gender] = {
-            "Female": Gender.FEMALE,
-            "Male": Gender.MALE,
-            "Non-Binary": Gender.NON_BINARY,
+        self.gender_value_by_label: dict[str, RoleGender] = {
+            "Female": RoleGender.FEMALE,
+            "Male": RoleGender.MALE,
+            "Non-Binary": RoleGender.NON_BINARY,
+            "Neutral": RoleGender.NEUTRAL,
         }
 
         self.warn = warn or (lambda _msg: None)
@@ -45,27 +49,44 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         self._name_by_id: dict[int, str] = {}
 
     def _normalize_name(self, name: str) -> str:
+        """
+        Normalize a role name for duplicate checking.
+        """
         return name.casefold()
-        
+
     # DataViewModel implementation (list model)
     @override
     def IsContainer(self, item: wx.dataview.DataViewItem) -> bool:
+        """
+        Only ROOT is a container.
+        """
         return not item.IsOk()
-    
+
     @override
     def GetParent(self, item: wx.dataview.DataViewItem) -> wx.dataview.DataViewItem:
+        """
+        All items have ROOT as parent.
+        """
         return ROOT
-    
+
     @override
-    def GetChildren(self, item: wx.dataview.DataViewItem, children: list[wx.dataview.DataViewItem]) -> int:
+    def GetChildren(
+        self, item: wx.dataview.DataViewItem, children: list[wx.dataview.DataViewItem]
+    ) -> int:
+        """
+        Return all role items as children of ROOT.
+        """
         if not item.IsOk():
             for rid in self.roles.keys():
                 children.append(self.role_id_to_dv_item(rid))
             return len(self.roles)
         return 0
-    
+
     @override
-    def GetValue(self, item: wx.dataview.DataViewItem, col: int) -> Any:
+    def GetValue(self, item: wx.dataview.DataViewItem, col: int):
+        """
+        Return the cell value for the given item and column.
+        """
         rid = self.dv_item_to_role_id(item)
         role = self.roles[rid]
 
@@ -78,9 +99,12 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 return self.gender_label_by_value.get(role.gender, str(role.gender))
             case _:
                 raise Exception("invalid column")
-            
+
     @override
-    def SetValue(self, variant: Any, item: wx.dataview.DataViewItem, col: int) -> bool:
+    def SetValue(self, variant, item: wx.dataview.DataViewItem, col: int) -> bool:
+        """
+        Validate and apply an edit. Returns True if accepted.
+        """
         rid = self.dv_item_to_role_id(item)
         role = self.roles[rid]
 
@@ -108,7 +132,7 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 self._name_by_id[rid] = new_name
                 self._names_present.add(new_norm)
 
-                role.name = new_name
+                self.roles[rid] = Role(id=role.id, name=new_name, gender=role.gender)
                 return True
 
             case self.COL_GENDER:
@@ -116,7 +140,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 if label not in self.gender_value_by_label:
                     self.warn(f"Unknown gender value: {label}")
                     return False
-                role.gender = self.gender_value_by_label[label]
+
+                new_gender = self.gender_value_by_label[label]
+                self.roles[rid] = Role(id=role.id, name=role.name, gender=new_gender)
                 return True
 
             case _:
@@ -124,6 +150,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
 
     # Check for duplicate names
     def _make_unique_default_name(self, base: str = "Role") -> str:
+        """
+        Return base or 'base N' not used yet.
+        """
         if self._normalize_name(base) not in self._names_present:
             return base
         i = 2
@@ -132,44 +161,61 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         return f"{base} {i}"
 
     def role_id_to_dv_item(self, rid: int) -> wx.dataview.DataViewItem:
+        """
+        Encode role id into a DataViewItem (rid + 1; 0 reserved for ROOT).
+        """
         return wx.dataview.DataViewItem(rid + 1)
 
     def role_to_dv_item(self, role: Role) -> wx.dataview.DataViewItem:
+        """
+        Shortcut: role -> DataViewItem.
+        """
         return self.role_id_to_dv_item(role.id)
 
     def dv_item_to_role_id(self, item: wx.dataview.DataViewItem) -> int:
+        """
+        Decode DataViewItem back to role id.
+        """
         if not item.IsOk():
             raise Exception("invalid item")
         return int(item.ID) - 1
 
     def get_gender_choices(self) -> list[str]:
+        """
+        Labels for the gender dropdown.
+        """
         return list(self.gender_value_by_label.keys())
 
     # Add/remove roles
     def add_role(self, role: Role) -> int:
-        if role.id is None:
-            role.id = self.next_id
+        """
+        Insert a role, fixing empty/duplicate names, and notify the view.
+        """
+        rid = role.id
+        if rid in self.roles:
+            raise Exception(f"role with id {rid} already exists")
 
-        if role.id in self.roles:
-            raise Exception(f"role with id {role.id} already exists")
+        if rid >= self.next_id:
+            self.next_id = rid + 1
 
-        if role.id >= self.next_id:
-            self.next_id = role.id + 1
+        name = (role.name or "").strip()
+        if not name or self._normalize_name(name) in self._names_present:
+            name = self._make_unique_default_name("Role")
 
-        role.name = (role.name or "").strip()
-        if not role.name or self._normalize_name(role.name) in self._names_present:
-            role.name = self._make_unique_default_name("Role")
-
-        self.roles[role.id] = role
+        role = Role(id=rid, name=name, gender=role.gender)
+        self.roles[rid] = role
 
         norm = self._normalize_name(role.name)
-        self._name_by_id[role.id] = role.name
+        self._name_by_id[rid] = role.name
         self._names_present.add(norm)
 
         self.ItemAdded(ROOT, self.role_to_dv_item(role))
-        return role.id
+        return rid
 
     def remove_role_by_id(self, rid: int) -> None:
+        """
+        Remove a role and notify the view.
+        """
         if rid not in self.roles:
             raise Exception(f"role with id {rid} not found")
 
@@ -184,6 +230,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
 
 # UI Panel for Role Editor
 class RoleEditorPanel(wx.Panel):
+    """
+    Panel showing roles in a DataViewCtrl with Add/Delete + context menu.
+    """
     def __init__(self, parent: wx.Window):
         super().__init__(parent)
 
@@ -198,9 +247,15 @@ class RoleEditorPanel(wx.Panel):
         self.bind_event_handlers()
 
     def _warn(self, message: str) -> None:
+        """
+        Show validation warnings from the model.
+        """
         wx.MessageBox(message, "Role Editor", wx.OK | wx.ICON_WARNING, parent=self)
 
     def init_layout(self) -> None:
+        """
+        Create layout: table + buttons.
+        """
         top_sizer = wx.BoxSizer(orient=wx.VERTICAL)
         top_sizer.Add(self.dv, 1, wx.EXPAND | wx.ALL, 5)
 
@@ -216,20 +271,37 @@ class RoleEditorPanel(wx.Panel):
         self.SetSizerAndFit(top_sizer)
 
     def bind_event_handlers(self) -> None:
-        self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_ACTIVATED, self.on_dataview_item_activated, self.dv)
+        """
+        Bind DataView + button + context menu events.
+        """
+        self.Bind(
+            wx.dataview.EVT_DATAVIEW_ITEM_ACTIVATED,
+            self.on_dataview_item_activated,
+            self.dv,
+        )
         self.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, self.on_context_menu, self.dv)
         self.Bind(wx.EVT_CONTEXT_MENU, self.on_context_menu, self.dv)
         self.Bind(wx.EVT_BUTTON, self.on_button)
 
     def append_columns(self) -> None:
+        """
+        Add ID, Name, Gender columns.
+        """
         self.dv.AppendTextColumn("ID", RoleEditorDataViewModel.COL_ID)
         self.dv.AppendColumn(self.make_text_column("Name", RoleEditorDataViewModel.COL_NAME))
         self.dv.AppendColumn(
-            self.make_choice_column("Gender", self.model.get_gender_choices(), RoleEditorDataViewModel.COL_GENDER)
+            self.make_choice_column(
+                "Gender",
+                self.model.get_gender_choices(),
+                RoleEditorDataViewModel.COL_GENDER,
+            )
         )
 
     @staticmethod
     def make_text_column(title: str, model_column: int) -> wx.dataview.DataViewColumn:
+        """
+        Editable text column.
+        """
         return wx.dataview.DataViewColumn(
             title,
             wx.dataview.DataViewTextRenderer(mode=wx.dataview.DATAVIEW_CELL_EDITABLE),
@@ -239,7 +311,12 @@ class RoleEditorPanel(wx.Panel):
         )
 
     @staticmethod
-    def make_choice_column(title: str, choices: list[str], model_column: int) -> wx.dataview.DataViewColumn:
+    def make_choice_column(
+        title: str, choices: list[str], model_column: int
+    ) -> wx.dataview.DataViewColumn:
+        """
+        Dropdown column.
+        """
         return wx.dataview.DataViewColumn(
             title,
             wx.dataview.DataViewChoiceRenderer(choices),
@@ -249,23 +326,37 @@ class RoleEditorPanel(wx.Panel):
         )
 
     def add_role(self, role: Role) -> int:
+        """
+        Add a role via the model.
+        """
         return self.model.add_role(role)
 
     def remove_selection(self) -> None:
+        """
+        Delete all selected roles.
+        """
         ids = [self.model.dv_item_to_role_id(item) for item in self.dv.Selections]
         for rid in ids:
             self.model.remove_role_by_id(rid)
 
     def on_dataview_item_activated(self, event: wx.dataview.DataViewEvent) -> None:
+        """
+        Double-click: edit the activated cell.
+        """
         item = event.GetItem()
         column = event.GetDataViewColumn()
         if column:
             self.dv.EditItem(item, column)
 
     def on_button(self, event: wx.Event) -> None:
+        """
+        Handle Add/Delete buttons.
+        """
         match event.Id:
             case wx.ID_ADD:
-                rid = self.add_role(Role(None, "Role", Gender.NON_BINARY))
+                rid = self.model.next_id
+                self.model.next_id += 1
+                rid = self.add_role(Role(id=rid, name="Role", gender=RoleGender.NEUTRAL))
                 self.dv.EditItem(
                     self.model.role_id_to_dv_item(rid),
                     self.dv.GetColumn(RoleEditorDataViewModel.COL_NAME),
@@ -276,6 +367,9 @@ class RoleEditorPanel(wx.Panel):
                 raise Exception("invalid button")
 
     def on_menu(self, event: wx.MenuEvent) -> None:
+        """
+        Handle context menu commands.
+        """
         match event.Id:
             case wx.ID_DELETE:
                 self.remove_selection()
@@ -283,6 +377,9 @@ class RoleEditorPanel(wx.Panel):
                 raise Exception("invalid menu item")
 
     def on_context_menu(self, event: wx.dataview.DataViewEvent) -> None:
+        """
+        Show context menu on right-click.
+        """
         menu = wx.Menu()
         menu.Append(wx.ID_DELETE, "&Delete")
         menu.Bind(wx.EVT_MENU, self.on_menu)
