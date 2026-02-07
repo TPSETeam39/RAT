@@ -1,8 +1,16 @@
-from pysat.card import CardEnc, EncType
-from pysat.formula import IDPool, CNFPlus
-from pysat.solvers import Solver
+from pysat.examples.rc2 import RC2Stratified
+from pysat.formula import IDPool, WCNFPlus
 
-from rat.io import Role, Student, RoleCouplingGraph, RoleGender
+from rat.io import (
+    Role,
+    Student,
+    RoleCouplingGraph,
+    RoleGender,
+    STUDENT_TO_ROLE_GENDER_MAP,
+)
+
+GENDER_PREFERENCE_WEIGHT = 10
+NEUTRAL_PREFERENCE_WEIGHT = 1
 
 
 class Calculator:
@@ -20,15 +28,25 @@ class Calculator:
         self._fill_variable_pool(roles, students)
 
         self._roles_with_gender = {
-            RoleGender.NON_BINARY: self._get_roles_with_gender(RoleGender.NON_BINARY),
-            RoleGender.NEUTRAL: self._get_roles_with_gender(RoleGender.NEUTRAL),
-            RoleGender.MALE: self._get_roles_with_gender(RoleGender.MALE),
-            RoleGender.FEMALE: self._get_roles_with_gender(RoleGender.FEMALE),
+            RoleGender.NON_BINARY: set(
+                [role for role in self.roles if role.gender == RoleGender.NON_BINARY]
+            ),
+            RoleGender.NEUTRAL: set(
+                [role for role in self.roles if role.gender == RoleGender.NEUTRAL]
+            ),
+            RoleGender.MALE: set(
+                [role for role in self.roles if role.gender == RoleGender.MALE]
+            ),
+            RoleGender.FEMALE: set(
+                [role for role in self.roles if role.gender == RoleGender.FEMALE]
+            ),
         }
 
-        self.cnf = CNFPlus()
+        self.wcnf = WCNFPlus()
         self._every_student_has_exactly_one_role()
         self._students_have_pairwise_different_roles()
+        self._enforce_gender_vetoes()
+        self._apply_gender_preferences()
         if role_couplings is not None:
             self._set_role_couplings(role_couplings)
         if essential_roles is not None:
@@ -51,9 +69,8 @@ class Calculator:
             relevant_variables = []
             for role in self.roles:
                 relevant_variables.append(self._student_has_role(student, role))
-            self.cnf.extend(
-                CardEnc.equals(lits=relevant_variables, encoding=EncType.pairwise)
-            )
+            self.wcnf.append([relevant_variables, 1], is_atmost=True)
+            self.wcnf.append(relevant_variables)
 
     def _students_have_pairwise_different_roles(self):
         """
@@ -61,31 +78,25 @@ class Calculator:
         the roles of students must be pairwise different.
         """
         for this_role in self.roles:
+            relevant_variables = []
             for this_student in self.students:
-                for other_student in self.students:
-                    if this_student != other_student:
-                        # this_student has this_role implies not(other_student has this role)
-                        self.cnf.append(
-                            [
-                                -1 * self._student_has_role(this_student, this_role),
-                                -1 * self._student_has_role(other_student, this_role),
-                            ]
-                        )
+                relevant_variables.append(
+                    self._student_has_role(this_student, this_role)
+                )
+            self.wcnf.append([relevant_variables, 1], is_atmost=True)
 
-    def _take_gender_vetoes_into_account(self):
+    def _enforce_gender_vetoes(self):
         """
-        Generates the assumptions (a list of literals), which bans
+        Extends the CNF with negative literals, which ban
         a student from taking over the role of a certain gender.
         :return: a list of literals, which represent all the students' vetoes.
         """
-        output = []
         for this_student in self.students:
             for vetoed_gender in this_student.get_vetoed_genders():
                 for vetoed_role in self._roles_with_gender[vetoed_gender]:
-                    output.append(
-                        -1 * self._student_has_role(this_student, vetoed_role)
+                    self.wcnf.append(
+                        [-1 * self._student_has_role(this_student, vetoed_role)]
                     )
-        return output
 
     def _set_role_couplings(self, role_couplings: RoleCouplingGraph):
         """
@@ -106,7 +117,7 @@ class Calculator:
                 relevant_variables.append(
                     self._student_has_role(other_student, coupled_role)
                 )
-            self.cnf.append(
+            self.wcnf.append(
                 [-1 * self._student_has_role(this_student, role)] + relevant_variables
             )
 
@@ -115,7 +126,31 @@ class Calculator:
             relevant_variables = []
             for student in self.students:
                 relevant_variables.append(self._student_has_role(student, role))
-            self.cnf.append(relevant_variables)
+            self.wcnf.append(relevant_variables)
+
+    def _apply_gender_preferences(self):
+        for student in self.students:
+            matching_gender_clause = []
+            for preferred_role in self._roles_with_gender.get(
+                STUDENT_TO_ROLE_GENDER_MAP.get(student.gender)
+            ):
+                matching_gender_clause.append(
+                    self._student_has_role(student, preferred_role)
+                )
+            if matching_gender_clause:
+                self.wcnf.append(
+                    matching_gender_clause, weight=GENDER_PREFERENCE_WEIGHT
+                )
+
+            neutral_gender_clause = []
+            for neutral_role in self._roles_with_gender.get(RoleGender.NEUTRAL):
+                neutral_gender_clause.append(
+                    self._student_has_role(student, neutral_role)
+                )
+            if neutral_gender_clause:
+                self.wcnf.append(
+                    neutral_gender_clause, weight=NEUTRAL_PREFERENCE_WEIGHT
+                )
 
     def calculate_role_assignments(self) -> dict[Student, Role]:
         if len(self.students) > len(self.roles):
@@ -126,11 +161,11 @@ class Calculator:
             raise RuntimeError(
                 "There are more essential roles than students! An assignment is obviously impossible!"
             )
-        with Solver(name="glucose3", bootstrap_with=self.cnf.clauses) as solver:
-            sat = solver.solve(assumptions=self._take_gender_vetoes_into_account())
+        with RC2Stratified(self.wcnf, solver="gluecard4") as solver:
+            sat = solver.compute()
             if sat:
                 print("Role Assignment Found")
-                return self._interpret_model(solver.get_model())
+                return self._interpret_model(solver.model)
             else:
                 print("Role Assignment Could Not Be Found")
                 return {}
