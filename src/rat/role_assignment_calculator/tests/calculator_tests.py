@@ -327,6 +327,53 @@ class TestCalculator(unittest.TestCase):
             if student.gender == StudentGender.NON_BINARY:
                 self.assertTrue(role.gender == RoleGender.NON_BINARY)
 
+    def test_priority_roles(self):
+        # GIVEN
+        roles = [Role(i) for i in range(0, 30)]
+        priority_roles = [Role(i) for i in range(30, 60)]
+        students = [Student(i, StudentGender.MALE) for i in range(0, 30)]
+        calculator = Calculator(
+            set(roles).union(set(priority_roles)),
+            set(students),
+            priority_roles=set(priority_roles),
+        )
+
+        # WHEN
+        role_assignments = calculator.calculate_role_assignments()
+
+        # THEN
+        self.assertTrue(len(role_assignments) > 0)
+        self.check_all_students_got_a_role(set(students), role_assignments)
+        self.check_pairwise_distinct(role_assignments)
+        self.assertTrue(all(not role_is_occupied(r, role_assignments) for r in roles))
+        self.assertTrue(
+            all(role_is_occupied(r, role_assignments) for r in priority_roles)
+        )
+
+    def test_role_blacklisting(self):
+        # GIVEN
+        roles = [Role(i) for i in range(0, 15)]
+        blacklisted_roles = [Role(i) for i in range(15, 30)]
+        students = [Student(i, StudentGender.MALE) for i in range(0, 15)]
+        calculator = Calculator(
+            set(roles).union(set(blacklisted_roles)),
+            set(students),
+            blacklisted_roles=set(blacklisted_roles),
+        )
+
+        # WHEN
+        role_assignments = calculator.calculate_role_assignments()
+        debug_print_role_assignments(role_assignments)
+
+        # THEN
+        self.assertTrue(len(role_assignments) > 0)
+        self.check_all_students_got_a_role(set(students), role_assignments)
+        self.check_pairwise_distinct(role_assignments)
+        self.assertTrue(
+            all(not role_is_occupied(r, role_assignments) for r in blacklisted_roles)
+        )
+        self.assertTrue(all(role_is_occupied(r, role_assignments) for r in roles))
+
     def check_pairwise_distinct(self, role_assignments: dict[Student, Role]):
         for stud_a, role_a in role_assignments.items():
             for stud_b, role_b in role_assignments.items():

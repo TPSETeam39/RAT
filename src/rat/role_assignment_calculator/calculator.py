@@ -9,6 +9,7 @@ from rat.io import (
     STUDENT_TO_ROLE_GENDER_MAP,
 )
 
+PRIORITY_ROLE_WEIGHT = 20
 GENDER_PREFERENCE_WEIGHT = 10
 NEUTRAL_PREFERENCE_WEIGHT = 1
 
@@ -20,9 +21,13 @@ class Calculator:
         students: set[Student],
         role_couplings: RoleCouplingGraph = None,
         essential_roles: set[Role] = None,
+        priority_roles: set[Role] = None,
+        blacklisted_roles: set[Role] = None,
     ):
         self.roles = roles
-        self.essential_roles = set([]) if essential_roles is None else essential_roles
+        self.essential_roles = essential_roles
+        self.priority_roles = priority_roles
+        self.blacklisted_roles = blacklisted_roles
         self.students = students
         self.variable_pool = IDPool()
         self._fill_variable_pool(roles, students)
@@ -51,6 +56,10 @@ class Calculator:
             self._set_role_couplings(role_couplings)
         if essential_roles is not None:
             self._enforce_essential_roles(essential_roles)
+        if priority_roles is not None:
+            self._apply_role_priorities()
+        if blacklisted_roles is not None:
+            self._blacklist_roles()
 
     def _fill_variable_pool(self, roles: set[Role], students: set[Student]):
         for s in students:
@@ -66,11 +75,13 @@ class Calculator:
         every student must have exactly one role.
         """
         for student in self.students:
-            relevant_variables = []
+            at_mosts = []
+            at_leasts = []
             for role in self.roles:
-                relevant_variables.append(self._student_has_role(student, role))
-            self.wcnf.append([relevant_variables, 1], is_atmost=True)
-            self.wcnf.append(relevant_variables)
+                at_mosts.append(self._student_has_role(student, role))
+                at_leasts.append(-1 * self._student_has_role(student, role))
+            self.wcnf.append([at_mosts, 1], is_atmost=True)
+            self.wcnf.append([at_leasts, len(self.roles) - 1], is_atmost=True)
 
     def _students_have_pairwise_different_roles(self):
         """
@@ -123,10 +134,10 @@ class Calculator:
 
     def _enforce_essential_roles(self, essential_roles):
         for role in essential_roles:
-            relevant_variables = []
+            at_leasts = []
             for student in self.students:
-                relevant_variables.append(self._student_has_role(student, role))
-            self.wcnf.append(relevant_variables)
+                at_leasts.append(-1 * self._student_has_role(student, role))
+            self.wcnf.append([at_leasts, len(self.students) - 1], is_atmost=True)
 
     def _apply_gender_preferences(self):
         for student in self.students:
@@ -152,12 +163,26 @@ class Calculator:
                     neutral_gender_clause, weight=NEUTRAL_PREFERENCE_WEIGHT
                 )
 
+    def _apply_role_priorities(self):
+        for role in self.priority_roles:
+            role_is_occupied_clause = []
+            for student in self.students:
+                role_is_occupied_clause.append(self._student_has_role(student, role))
+            self.wcnf.append(role_is_occupied_clause, weight=PRIORITY_ROLE_WEIGHT)
+
+    def _blacklist_roles(self):
+        for role in self.blacklisted_roles:
+            for student in self.students:
+                self.wcnf.append([-1 * self._student_has_role(student, role)])
+
     def calculate_role_assignments(self) -> dict[Student, Role]:
         if len(self.students) > len(self.roles):
             raise RuntimeError(
                 "There are more roles than students! An assignment is obviously impossible!"
             )
-        if len(self.essential_roles) > len(self.students):
+        if self.essential_roles is not None and len(self.essential_roles) > len(
+            self.students
+        ):
             raise RuntimeError(
                 "There are more essential roles than students! An assignment is obviously impossible!"
             )
