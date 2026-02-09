@@ -1,20 +1,13 @@
 import wx
 
-from rat.io import StudentGender, RoleGender, Student, Role, GenderVetoOption
+from rat.io import RoleGender, Role
 from rat.role_assignment_calculator.calculator import Calculator
-from .editor import StudentInfoEditorPanel
+from .student_editor import StudentInfoEditorPanel
+from .role_editor import RoleEditorPanel
 from .output import OutputPanel
 
-class WxApp(wx.App):
-    def __init__(self):
-        super().__init__(redirect=False)
 
-        # wx.Log.SetActiveTarget(wx.LogStderr())
-
-        self.frame = TestWindow()
-        self.frame.Show()
-
-class TestWindow(wx.Frame):
+class MainWindow(wx.Frame):
     def __init__(self):
         super().__init__(parent=None, title="Test")
 
@@ -32,7 +25,7 @@ class TestWindow(wx.Frame):
 
         self.student_editor = StudentInfoEditorPanel(self.panel)
 
-        # self.role_editor = StudentInfoEditorPanel(self.panel) # TODO: use role editor
+        self.role_editor = RoleEditorPanel(self.panel)
 
         self.output_display = OutputPanel(self.panel)
 
@@ -43,7 +36,7 @@ class TestWindow(wx.Frame):
         upper_sizer = wx.BoxSizer(wx.HORIZONTAL)
         upper_sizer.Add(self.test_button)
         upper_sizer.Add(self.student_editor, 1, wx.EXPAND | wx.ALL)
-        # upper_sizer.Add(self.role_editor, 1, wx.EXPAND | wx.ALL)
+        upper_sizer.Add(self.role_editor, 1, wx.EXPAND | wx.ALL)
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(upper_sizer, 1, wx.EXPAND | wx.ALL)
@@ -56,14 +49,10 @@ class TestWindow(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self._on_button, self.test_button)
     
     def _on_button(self, event: wx.Event):
-        roles = set()
-        for i in range(0, 30):
-            roles.add(Role(i, f"Role {i}", RoleGender.MALE))
+        roles = self.role_editor.get_roles()
 
-        students = set()
-        for student in self.student_editor.get_students():
-            students.add(student)
-        
+        students = self.student_editor.get_students()
+
         calc = Calculator(roles, students)
         assignments = calc.calculate_role_assignments()
 
