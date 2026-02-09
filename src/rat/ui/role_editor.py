@@ -249,6 +249,24 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
 
         self.ItemDeleted(ROOT, self.role_id_to_dv_item(rid))
 
+    def get_roles_map(self) -> dict[int, Role]:
+        """
+        Gets all roles in this model as a map of role IDs to Roles.
+        
+        :return: The map of role IDs to roles.
+        :rtype: dict[int, Role]
+        """
+        return self.roles
+
+    def get_roles(self) -> set[Role]:
+        """
+        Gets all roles in this model as a set.
+        
+        :return: The set of roles.
+        :rtype: set[Role]
+        """
+        return set(self.get_roles_map().values())
+
 
 class RoleEditorPanel(wx.Panel):
     """
@@ -415,3 +433,21 @@ class RoleEditorPanel(wx.Panel):
         menu.Append(wx.ID_DELETE, "&Delete")
         menu.Bind(wx.EVT_MENU, self.on_menu)
         self.PopupMenu(menu, event.GetPosition())
+
+    def get_roles_map(self) -> dict[int, Role]:
+        """
+        Gets all roles in this editor as a map of role IDs to Roles.
+        
+        :return: The map of role IDs to roles.
+        :rtype: dict[int, Role]
+        """
+        return self.model.get_roles_map()
+
+    def get_roles(self) -> set[Role]:
+        """
+        Gets all roles in this editor as a set.
+        
+        :return: The set of roles.
+        :rtype: set[Role]
+        """
+        return self.model.get_roles()
