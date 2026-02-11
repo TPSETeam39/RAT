@@ -1,10 +1,5 @@
-from copy import deepcopy
-from threading import Timer
 from typing import Tuple
-
-from pysat.examples.fm import FM
-from pysat.examples.rc2 import RC2, RC2Stratified
-from pysat.formula import IDPool, WCNFPlus, CNFPlus
+from pysat.formula import IDPool, CNFPlus
 from pysat.solvers import Solver
 
 from rat.io import (
@@ -16,7 +11,7 @@ from rat.io import (
     StudentGender,
 )
 
-CONFLICT_BUDGET = 10_000
+CONFLICT_BUDGET = 100_000
 
 
 def _gender_matches(assignment: Tuple[Student, Role]) -> bool:
@@ -91,27 +86,46 @@ class Calculator:
     def _gender_match(self, s: Student) -> int:
         return self.variable_pool.id(s)
 
+    def _priority_role_given(self, r: Role) -> int:
+        return self.variable_pool.id(r)
+
     def calculate_role_assignments(self) -> dict[Student, Role]:
         if self._trivially_unsatisfiable():
             print("Role assignment could not be found: trivially unsatisfiable")
             return {}
 
-        last_optimal_assignment = _call_sat_solver(
-            self._build_formula_without_gender_matching()
-        )
+        last_optimal_assignment = _call_sat_solver(self._build_base_formula())
         if last_optimal_assignment is None:
             print("Role assignment could not be found")
             return {}
 
+        # Use binary search to look for the optimal number of priority roles that can be fulfilled.
+        optimal_priority_roles_fulfillable = -1
+        if self.priority_roles is not None:
+            high = len(self.priority_roles)
+            low = 0
+            while low <= high:
+                mid = low + (high - low) // 2
+                formula = self._build_base_formula()
+                self._enforce_n_priority_roles(formula, mid)
+                if _call_sat_solver(formula) is not None:
+                    low = mid + 1
+                    optimal_priority_roles_fulfillable = mid
+                else:
+                    high = mid - 1
+
+        # Use binary search to look for the optimal number of students to gender match.
         high = len(self.students)
         low = 0
-        # Use binary search to look for the optimal number of students to gender match.
         while low <= high:
             mid = low + (high - low) // 2
-            formula = self._build_formula_without_gender_matching()
-            self._enforce_gender_matching_for_n_students(formula, mid)
+            formula = self._build_base_formula()
+            if optimal_priority_roles_fulfillable != -1:
+                self._enforce_n_priority_roles(
+                    formula, optimal_priority_roles_fulfillable
+                )
+            self._enforce_n_students_to_get_gender_matching_role(formula, mid)
             candidate_assignment = _call_sat_solver(formula)
-
             if candidate_assignment is not None:
                 low = mid + 1
                 last_optimal_assignment = candidate_assignment
@@ -120,7 +134,7 @@ class Calculator:
 
         return self._interpret_model(last_optimal_assignment)
 
-    def _build_formula_without_gender_matching(self):
+    def _build_base_formula(self):
         formula = CNFPlus()
         self._every_student_has_exactly_one_role(formula)
         self._students_have_pairwise_different_roles(formula)
@@ -251,14 +265,12 @@ class Calculator:
             for student in self.students:
                 formula.append([-1 * self._student_has_role(student, role)])
 
-    def _enforce_gender_matching_for_n_students(
-        self, formula: CNFPlus, number_of_students_to_match: int
-    ):
+    def _enforce_n_students_to_get_gender_matching_role(self, formula: CNFPlus, n: int):
         """
         Extends the CNF formula with clauses, which state that at least a given amount of students
         must have a role that matches their gender.
         """
-        if number_of_students_to_match == 0:
+        if n == 0:
             return
         gender_match_literals = []
         for s in self.students:
@@ -273,9 +285,25 @@ class Calculator:
                 ]
             )
         formula.append(
-            [gender_match_literals, len(self.students) - number_of_students_to_match],
+            [gender_match_literals, len(self.students) - n],
             is_atmost=True,
         )
+
+    def _enforce_n_priority_roles(self, formula: CNFPlus, n: int):
+        """
+        Extends the CNF formula with clauses, which state that at least a given amount of
+        priority roles must be given to at least one student.
+        """
+        if n == 0 or self.priority_roles is None:
+            return
+        literals = []
+        for pr in self.priority_roles:
+            lit = -1 * self._priority_role_given(pr)
+            literals.append(lit)
+            formula.append(
+                [lit] + [self._student_has_role(s, pr) for s in self.students]
+            )
+        formula.append([literals, len(self.priority_roles) - n], is_atmost=True)
 
     def _get_matching_roles_for_student(self, student: Student):
         """
