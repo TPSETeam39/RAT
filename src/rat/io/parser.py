@@ -98,11 +98,6 @@ class survey_parser:
             return f"Parsed {len(self.parsed_data)} survey responses."
         except Exception as e:
             return f"Parsing error: {e}"
-        
-    def show_parsed_data(self):
-        """Displays the parsed survey data."""
-        for i, entry in enumerate(self.parsed_data):
-            print(f"Response #{i}: {entry}")
 
 #if __name__ == "__main__":
 #    parser = survey_parser("test_data/result_default_settings.json")
