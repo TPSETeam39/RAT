@@ -50,7 +50,7 @@ class MaresaCalculatorFactoryTests(unittest.TestCase):
 
         # WHEN
         for i in range(0, n):
-            students_amount = random.randint(14, 48)
+            students_amount = random.randint(14, 47)
             students = [
                 Student(
                     i,

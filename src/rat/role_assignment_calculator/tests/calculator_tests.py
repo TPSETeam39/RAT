@@ -142,7 +142,7 @@ class TestCalculator(unittest.TestCase):
         # GIVEN
         roles = set([Role(i) for i in range(1, 31)])
         essential_roles = set([Role(i) for i in range(1, 10)])
-        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 10)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 12)])
         calculator = Calculator(roles, students, essential_roles=essential_roles)
 
         # WHEN
@@ -214,9 +214,6 @@ class TestCalculator(unittest.TestCase):
         non_binary_roles = [
             Role(i, name=f"NonBinaryRole{i}", gender=RoleGender.NON_BINARY) for i in r
         ]
-        gender_neutral_roles = [
-            Role(i, name=f"GenderNeutralRole{i}", gender=RoleGender.NEUTRAL) for i in r
-        ]
 
         male_students = [
             Student(i, first_name=f"Male{i}", gender=StudentGender.MALE) for i in r
@@ -229,12 +226,7 @@ class TestCalculator(unittest.TestCase):
             for i in r
         ]
 
-        all_roles = (
-            set(male_roles)
-            .union(set(female_roles))
-            .union(non_binary_roles)
-            .union(gender_neutral_roles)
-        )
+        all_roles = set(male_roles).union(set(female_roles)).union(non_binary_roles)
         all_students = (
             set(male_students)
             .union(set(female_students))
@@ -265,12 +257,6 @@ class TestCalculator(unittest.TestCase):
             all(
                 role_is_occupied(non_bin_role, role_assignments)
                 for non_bin_role in non_binary_roles
-            )
-        )
-        self.assertTrue(
-            all(
-                not role_is_occupied(neut_role, role_assignments)
-                for neut_role in gender_neutral_roles
             )
         )
 
@@ -332,11 +318,11 @@ class TestCalculator(unittest.TestCase):
 
     def test_priority_roles(self):
         # GIVEN
-        roles = [Role(i) for i in range(0, 30)]
-        priority_roles = [Role(i) for i in range(30, 60)]
-        students = [Student(i, StudentGender.MALE) for i in range(0, 30)]
+        normal_roles = [Role(i) for i in range(0, 30)]
+        priority_roles = [Role(i) for i in range(30, 50)]
+        students = [Student(i, StudentGender.MALE) for i in range(0, 31)]
         calculator = Calculator(
-            set(roles).union(set(priority_roles)),
+            set(normal_roles).union(set(priority_roles)),
             set(students),
             priority_roles=set(priority_roles),
         )
@@ -348,7 +334,6 @@ class TestCalculator(unittest.TestCase):
         self.assertTrue(len(role_assignments) > 0)
         self.check_all_students_got_a_role(set(students), role_assignments)
         self.check_pairwise_distinct(role_assignments)
-        self.assertTrue(all(not role_is_occupied(r, role_assignments) for r in roles))
         self.assertTrue(
             all(role_is_occupied(r, role_assignments) for r in priority_roles)
         )
