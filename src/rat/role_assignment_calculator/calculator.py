@@ -1,4 +1,6 @@
 from copy import deepcopy
+from threading import Timer
+from typing import Tuple
 
 from pysat.examples.fm import FM
 from pysat.examples.rc2 import RC2, RC2Stratified
@@ -14,9 +16,24 @@ from rat.io import (
     StudentGender,
 )
 
-ESSENTIALS_GENDER_MATCHING_WEIGHT = 100000
-PRIORITY_ROLES_WEIGHT = 1000
-GENDER_PREFERENCE_WEIGHT = 1
+CONFLICT_BUDGET = 10_000
+
+
+def _gender_matches(assignment: Tuple[Student, Role]) -> bool:
+    return (
+        assignment[1].gender == RoleGender.NEUTRAL
+        or STUDENT_TO_ROLE_GENDER_MAP.get(assignment[0].gender) == assignment[1].gender
+    )
+
+
+def _call_sat_solver(formula: CNFPlus) -> None | list[int]:
+    with Solver(name="gluecard4", bootstrap_with=formula) as solver:
+        solver.conf_budget(CONFLICT_BUDGET)
+        sat = solver.solve_limited()
+        if sat is None:
+            return None
+        else:
+            return solver.get_model() if sat is True else None
 
 
 class Calculator:
@@ -64,44 +81,46 @@ class Calculator:
             ),
         }
 
-        self._essential_roles_with_gender = None
-        if essential_roles is not None:
-            self._essential_roles_with_gender = {
-                RoleGender.NON_BINARY: set(
-                    [
-                        role
-                        for role in self.essential_roles
-                        if role.gender == RoleGender.NON_BINARY
-                    ]
-                ),
-                RoleGender.NEUTRAL: set(
-                    [
-                        role
-                        for role in self.essential_roles
-                        if role.gender == RoleGender.NEUTRAL
-                    ]
-                ),
-                RoleGender.MALE: set(
-                    [
-                        role
-                        for role in self.essential_roles
-                        if role.gender == RoleGender.MALE
-                    ]
-                ),
-                RoleGender.FEMALE: set(
-                    [
-                        role
-                        for role in self.essential_roles
-                        if role.gender == RoleGender.FEMALE
-                    ]
-                ),
-            }
+    def _student_has_role(self, s: Student, r: Role) -> int:
+        if not isinstance(s, Student):
+            raise TypeError(f"{s} is expected to be a Student!")
+        if not isinstance(r, Role):
+            raise TypeError(f"{r} is expected to be a Role!")
+        return self.variable_pool.id((s, r))
+
+    def _gender_match(self, s: Student) -> int:
+        return self.variable_pool.id(s)
 
     def calculate_role_assignments(self) -> dict[Student, Role]:
         if self._trivially_unsatisfiable():
             print("Role assignment could not be found: trivially unsatisfiable")
             return {}
 
+        last_optimal_assignment = _call_sat_solver(
+            self._build_formula_without_gender_matching()
+        )
+        if last_optimal_assignment is None:
+            print("Role assignment could not be found")
+            return {}
+
+        high = len(self.students)
+        low = 0
+        # Use binary search to look for the optimal number of students to gender match.
+        while low <= high:
+            mid = low + (high - low) // 2
+            formula = self._build_formula_without_gender_matching()
+            self._enforce_gender_matching_for_n_students(formula, mid)
+            candidate_assignment = _call_sat_solver(formula)
+
+            if candidate_assignment is not None:
+                low = mid + 1
+                last_optimal_assignment = candidate_assignment
+            else:
+                high = mid - 1
+
+        return self._interpret_model(last_optimal_assignment)
+
+    def _build_formula_without_gender_matching(self):
         formula = CNFPlus()
         self._every_student_has_exactly_one_role(formula)
         self._students_have_pairwise_different_roles(formula)
@@ -110,14 +129,7 @@ class Calculator:
             self._blacklist_roles(formula)
         if self.essential_roles is not None:
             self._enforce_essential_roles(formula)
-
-        with Solver(name="gluecard4", bootstrap_with=formula) as solver:
-            if solver.solve():
-                print("Role Assignment Found")
-                return self._interpret_model(solver.get_model())
-            else:
-                print("Role Assignment Could Not Be Found")
-                return {}
+        return formula
 
     def _trivially_unsatisfiable(self):
         if len(self.students) > len(self.roles):
@@ -159,14 +171,7 @@ class Calculator:
             for r in roles:
                 self.variable_pool.id((s, r))
 
-    def _student_has_role(self, s: Student, r: Role):
-        if not isinstance(s, Student):
-            raise TypeError(f"{s} is expected to be a Student!")
-        if not isinstance(r, Role):
-            raise TypeError(f"{r} is expected to be a Role!")
-        return self.variable_pool.id((s, r))
-
-    def _every_student_has_exactly_one_role(self, formula: WCNFPlus):
+    def _every_student_has_exactly_one_role(self, formula: CNFPlus):
         """
         Extends the formula with clauses, which state that
         every student must have exactly one role.
@@ -183,13 +188,7 @@ class Calculator:
             formula.append([at_mosts, 1], is_atmost=True)
             formula.append([at_leasts, len(self.roles) - 1], is_atmost=True)
 
-    def _every_student_has_at_least_one_role(self, formula: WCNFPlus):
-        pass
-
-    def _every_student_has_at_most_one_role(self, formula: WCNFPlus):
-        pass
-
-    def _students_have_pairwise_different_roles(self, formula: WCNFPlus):
+    def _students_have_pairwise_different_roles(self, formula: CNFPlus):
         """
         Extends the formula with clauses, which state that
         the roles of students must be pairwise different.
@@ -205,7 +204,7 @@ class Calculator:
                 )
             formula.append([relevant_variables, 1], is_atmost=True)
 
-    def _enforce_gender_vetoes(self, formula: WCNFPlus):
+    def _enforce_gender_vetoes(self, formula: CNFPlus):
         """
         Gets gender vetoes as a list of negative literals, intended as a list of assumptions.
         """
@@ -217,7 +216,7 @@ class Calculator:
         ]
         formula.append([ban_list, 0], is_atmost=True)
 
-    def _set_role_couplings(self, formula: WCNFPlus, role_couplings: RoleCouplingGraph):
+    def _set_role_couplings(self, formula: CNFPlus, role_couplings: RoleCouplingGraph):
         """
         Extends the CNF formula with clauses, which state that given roles are coupled to one another other.
         """
@@ -225,7 +224,7 @@ class Calculator:
             for coupled_role in role_couplings.map[role]:
                 self._couple_roles(formula, role, coupled_role)
 
-    def _couple_roles(self, formula: WCNFPlus, role: Role, coupled_role: Role):
+    def _couple_roles(self, formula: CNFPlus, role: Role, coupled_role: Role):
         """
         Extends the CNF formula with clauses, which couple the roles.
         """
@@ -240,44 +239,51 @@ class Calculator:
                 [-1 * self._student_has_role(this_student, role)] + relevant_variables
             )
 
-    def _enforce_essential_roles(self, formula: WCNFPlus):
+    def _enforce_essential_roles(self, formula: CNFPlus):
         for role in self.essential_roles:
             at_leasts = []
             for student in self.students:
                 at_leasts.append(-1 * self._student_has_role(student, role))
             formula.append([at_leasts, len(self.students) - 1], is_atmost=True)
 
-    def _gender_matching_for_essential_roles(self, formula: WCNFPlus):
-        """
-        Coerces the formula to match essential roles to students of the matching gender.
-
-        Each essential role should at least have a student of the matching gender playing it.
-        """
-        for student_gender, matching_students in self._students_with_gender.items():
-            preferred_role_gender = STUDENT_TO_ROLE_GENDER_MAP.get(student_gender)
-            matching_roles = self._essential_roles_with_gender.get(
-                preferred_role_gender
-            ).union(self._essential_roles_with_gender.get(RoleGender.NEUTRAL))
-            for preferred_role in matching_roles:
-                formula.append(
-                    [
-                        self._student_has_role(s, preferred_role)
-                        for s in matching_students
-                    ],
-                    weight=ESSENTIALS_GENDER_MATCHING_WEIGHT,
-                )
-
-    def _highlight_priority_roles(self, formula: WCNFPlus):
-        for role in self.priority_roles:
-            role_is_occupied_clause = []
-            for student in self.students:
-                role_is_occupied_clause.append(self._student_has_role(student, role))
-            formula.append(role_is_occupied_clause, weight=PRIORITY_ROLES_WEIGHT)
-
-    def _blacklist_roles(self, formula: WCNFPlus):
+    def _blacklist_roles(self, formula: CNFPlus):
         for role in self.blacklisted_roles:
             for student in self.students:
                 formula.append([-1 * self._student_has_role(student, role)])
+
+    def _enforce_gender_matching_for_n_students(
+        self, formula: CNFPlus, number_of_students_to_match: int
+    ):
+        """
+        Extends the CNF formula with clauses, which state that at least a given amount of students
+        must have a role that matches their gender.
+        """
+        if number_of_students_to_match == 0:
+            return
+        gender_match_literals = []
+        for s in self.students:
+            # s is gender-matched --> s is assigned at least one role that matches their gender
+            gender_match_literal = -1 * self._gender_match(s)
+            gender_match_literals.append(gender_match_literal)
+            formula.append(
+                [gender_match_literal]
+                + [
+                    self._student_has_role(s, matching_role)
+                    for matching_role in self._get_matching_roles_for_student(s)
+                ]
+            )
+        formula.append(
+            [gender_match_literals, len(self.students) - number_of_students_to_match],
+            is_atmost=True,
+        )
+
+    def _get_matching_roles_for_student(self, student: Student):
+        """
+        Get all roles that match the student's gender. Neutral roles inclusive.
+        """
+        return self._roles_with_gender.get(
+            STUDENT_TO_ROLE_GENDER_MAP.get(student.gender)
+        ).union(self._roles_with_gender.get(RoleGender.NEUTRAL))
 
     def _interpret_model(self, model) -> dict[Student, Role]:
         role_assignments = []
@@ -288,9 +294,10 @@ class Calculator:
         output = {}
         for ra in role_assignments:
             # The variable pool has a mapping of integer IDs to the tuple defined in _student_has_role(s, r)
-            student = ra[0]
-            role = ra[1]
-            output[student] = role
+            if isinstance(ra, tuple):
+                student = ra[0]
+                role = ra[1]
+                output[student] = role
         return output
 
     def _get_roles_with_gender(self, vetoed_gender: RoleGender):

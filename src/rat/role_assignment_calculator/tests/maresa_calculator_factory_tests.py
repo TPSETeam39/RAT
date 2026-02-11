@@ -30,7 +30,7 @@ class MaresaCalculatorFactoryTests(unittest.TestCase):
 
     def test_return_none_when_too_few_students(self):
         # GIVEN
-        students = [Student(i, gender=StudentGender.FEMALE) for i in range(0, 5)]
+        students = [Student(i, gender=StudentGender.FEMALE) for i in range(0, 13)]
 
         # WHEN / THEN
         # The minimum amount is 14
@@ -38,19 +38,19 @@ class MaresaCalculatorFactoryTests(unittest.TestCase):
 
     def test_return_none_when_too_many_students(self):
         # GIVEN
-        students = [Student(i, gender=StudentGender.FEMALE) for i in range(0, 100)]
+        students = [Student(i, gender=StudentGender.FEMALE) for i in range(0, 48)]
 
         # WHEN
-        # The maximum amount is 48
+        # The maximum amount is 47
         self.assertIsNone(get_calculator(set(students)))
 
     def test_do_random_testing(self):
         # GIVEN
-        n = 5
+        n = 15
 
         # WHEN
         for i in range(0, n):
-            students_amount = random.randint(14, 17)
+            students_amount = random.randint(14, 48)
             students = [
                 Student(
                     i,
