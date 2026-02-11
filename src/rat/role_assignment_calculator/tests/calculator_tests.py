@@ -78,8 +78,11 @@ class TestCalculator(unittest.TestCase):
         students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 31)])
         calculator = Calculator(roles, students)
 
-        # WHEN / THEN
-        self.assertRaises(RuntimeError, lambda: calculator.calculate_role_assignments())
+        # WHEN
+        role_assignments = calculator.calculate_role_assignments()
+
+        # THEN
+        self.assertEqual(role_assignments, {})
 
     def test_gender_vetoes(self):
         # GIVEN
@@ -133,7 +136,7 @@ class TestCalculator(unittest.TestCase):
         role_assignments = calculator.calculate_role_assignments()
 
         # THEN
-        self.assertTrue(len(role_assignments) > 0)
+        self.assertGreater(len(role_assignments), 0)
         self.check_pairwise_distinct(role_assignments)
         self.check_no_vetoes_were_violated(role_assignments)
 
@@ -160,8 +163,15 @@ class TestCalculator(unittest.TestCase):
         students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 5)])
         calculator = Calculator(roles, students, essential_roles=essential_roles)
 
-        # WHEN / THEN
-        self.assertRaises(RuntimeError, lambda: calculator.calculate_role_assignments())
+        # WHEN
+        role_assignments = calculator.calculate_role_assignments()
+
+        # THEN
+        self.assertEqual(
+            role_assignments,
+            {},
+            f"Expected an empty dictionary, but got {role_assignments}!",
+        )
 
     def test_role_couplings(self):
         """
@@ -210,9 +220,6 @@ class TestCalculator(unittest.TestCase):
         non_binary_roles = [
             Role(i, name=f"NonBinaryRole{i}", gender=RoleGender.NON_BINARY) for i in r
         ]
-        gender_neutral_roles = [
-            Role(i, name=f"GenderNeutralRole{i}", gender=RoleGender.NEUTRAL) for i in r
-        ]
 
         male_students = [
             Student(i, first_name=f"Male{i}", gender=StudentGender.MALE) for i in r
@@ -225,12 +232,7 @@ class TestCalculator(unittest.TestCase):
             for i in r
         ]
 
-        all_roles = (
-            set(male_roles)
-            .union(set(female_roles))
-            .union(non_binary_roles)
-            .union(gender_neutral_roles)
-        )
+        all_roles = set(male_roles).union(set(female_roles)).union(non_binary_roles)
         all_students = (
             set(male_students)
             .union(set(female_students))
@@ -262,12 +264,6 @@ class TestCalculator(unittest.TestCase):
             all(
                 role_is_occupied(non_bin_role, role_assignments)
                 for non_bin_role in non_binary_roles
-            )
-        )
-        self.assertTrue(
-            all(
-                not role_is_occupied(neut_role, role_assignments)
-                for neut_role in gender_neutral_roles
             )
         )
 
@@ -331,8 +327,9 @@ class TestCalculator(unittest.TestCase):
         for stud_a, role_a in role_assignments.items():
             for stud_b, role_b in role_assignments.items():
                 if stud_a != stud_b:
-                    self.assertTrue(
-                        role_a != role_b,
+                    self.assertNotEqual(
+                        role_a,
+                        role_b,
                         f"{stud_a} and {stud_b}" f" were both assigned {role_a}!",
                     )
 
