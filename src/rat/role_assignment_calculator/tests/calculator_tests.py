@@ -58,8 +58,8 @@ class TestCalculator(unittest.TestCase):
 
     def test_equal_number_of_students_and_roles(self):
         # GIVEN
-        roles = set([Role(i) for i in range(1, 35)])
-        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 35)])
+        roles = set([Role(i) for i in range(1, 60)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 60)])
         self.calculator = Calculator(roles, students)
 
         # WHEN
@@ -75,11 +75,12 @@ class TestCalculator(unittest.TestCase):
     def test_more_students_than_roles(self):
         # GIVEN
         roles = set([Role(i) for i in range(1, 20)])
-        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 31)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 21)])
         calculator = Calculator(roles, students)
 
         # WHEN / THEN
-        self.assertRaises(RuntimeError, lambda: calculator.calculate_role_assignments())
+        role_assignments = calculator.calculate_role_assignments()
+        self.assertTrue(role_assignments == {})
 
     def test_gender_vetoes(self):
         # GIVEN
@@ -160,8 +161,11 @@ class TestCalculator(unittest.TestCase):
         students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 5)])
         calculator = Calculator(roles, students, essential_roles=essential_roles)
 
-        # WHEN / THEN
-        self.assertRaises(RuntimeError, lambda: calculator.calculate_role_assignments())
+        # WHEN
+        role_assignments = calculator.calculate_role_assignments()
+
+        # THEN
+        self.assertTrue(role_assignments == {})
 
     def test_role_couplings(self):
         """
@@ -237,8 +241,7 @@ class TestCalculator(unittest.TestCase):
             .union(set(non_binary_students))
         )
         calculator = Calculator(
-            all_roles,
-            all_students,
+            all_roles, all_students, essential_roles=set(non_binary_roles)
         )
 
         # WHEN

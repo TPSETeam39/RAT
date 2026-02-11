@@ -1,9 +1,10 @@
 # Hardcode the roles until we can save and load roles
+from copy import deepcopy
 from typing import Any
 
 from rat.io import Role, RoleGender, RoleCouplingGraph
 
-STUDENT_CAP = 48
+STUDENT_CAP = 47
 STUDENT_FLOOR = 14
 
 # KLASSE 8A
@@ -153,7 +154,7 @@ SCHUL_PERSONAL_OHNE_MEYER_SEHRING = {
 COUPLINGS = None
 
 ESSENTIAL_ROLES = {
-    "25-47": KLASSE_8B_ESSENTIALS.union(SCHUL_PERSONAL_OHNE_MEYER_SEHRING).union(
+    "25-46": KLASSE_8B_ESSENTIALS.union(SCHUL_PERSONAL_OHNE_MEYER_SEHRING).union(
         {
             ASK_CEM,  # KLASSE 8A
             KLEIN_TONI,
@@ -186,7 +187,7 @@ ESSENTIAL_ROLES = {
 }
 
 PRIORITY_ROLES = {
-    "25-47": {
+    "25-46": {
         KOCH_ERWIN,  # KLASSE 8A
         MITTEMEIER_HANNAH,
         SCHMIDT_LUCA,
@@ -202,7 +203,7 @@ PRIORITY_ROLES = {
 }
 
 BLACKLISTED_ROLES = {
-    "25-47": {SCHUL_MEYER_SEHRING},
+    "25-46": {SCHUL_MEYER_SEHRING},
     "17-24": KLASSE_8A.union({SCHUL_EMMINGER, SCHUL_HANS_MERIC, SCHUL_MEYER_SEHRING}),
     "14-16": KLASSE_8A.union(
         {
@@ -219,16 +220,19 @@ BLACKLISTED_ROLES = {
 def _select_from_dictionary(
     number_of_students: int, some_dict: dict[str, set[Any]]
 ) -> set[Any]:
-    if number_of_students == STUDENT_CAP:
-        return some_dict["25-47"]
-    elif 25 <= number_of_students <= 47:
-        return some_dict["25-47"]
+    if 25 <= number_of_students <= STUDENT_CAP:
+        return some_dict["25-46"]
+    elif 17 <= number_of_students <= 24:
+        return some_dict["17-24"]
     elif 14 <= number_of_students <= 16:
         return some_dict["14-16"]
 
 
 def get_essential_roles(number_of_students: int) -> set[Role]:
-    return _select_from_dictionary(number_of_students, ESSENTIAL_ROLES)
+    output = deepcopy(_select_from_dictionary(number_of_students, ESSENTIAL_ROLES))
+    if number_of_students == STUDENT_CAP:
+        output.add(SCHUL_MEYER_SEHRING)
+    return output
 
 
 def get_priority_roles(number_of_students) -> set[Role]:
@@ -236,4 +240,7 @@ def get_priority_roles(number_of_students) -> set[Role]:
 
 
 def get_black_listed_roles(number_of_students) -> set[Role]:
-    return _select_from_dictionary(number_of_students, BLACKLISTED_ROLES)
+    output = deepcopy(_select_from_dictionary(number_of_students, BLACKLISTED_ROLES))
+    if number_of_students == STUDENT_CAP:
+        output.remove(SCHUL_MEYER_SEHRING)
+    return output

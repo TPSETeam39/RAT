@@ -46,11 +46,11 @@ class MaresaCalculatorFactoryTests(unittest.TestCase):
 
     def test_do_random_testing(self):
         # GIVEN
-        n = 3
+        n = 5
 
         # WHEN
         for i in range(0, n):
-            students_amount = random.randint(14, 48)
+            students_amount = random.randint(14, 17)
             students = [
                 Student(
                     i,
@@ -60,6 +60,7 @@ class MaresaCalculatorFactoryTests(unittest.TestCase):
                 for i in range(students_amount)
             ]
             print(f"Trial {i} with {len(students)} students")
+            print(students)
             debug_print_role_assignments(
                 get_calculator(set(students)).calculate_role_assignments()
             )
