@@ -395,14 +395,17 @@ class StudentInfoEditorPanel(wx.Panel):
         column = event.GetDataViewColumn()
         if column:
             self._dataview.EditItem(item, column)
+
+    def _add_student_and_begin_edit(self):
+        id = self.add_new_student()
+                
+        # start editing in the first column automatically
+        self._dataview.EditItem(self._model.student_id_to_dv_item(id), self._dataview.GetColumn(self._model.COL_LAST_NAME))
     
     def _on_button(self, event: wx.Event):
         match event.Id:
             case wx.ID_ADD:
-                id = self.add_new_student()
-                
-                # start editing in the first column automatically
-                self._dataview.EditItem(self._model.student_id_to_dv_item(id), self._dataview.GetColumn(self._model.COL_LAST_NAME))
+                self._add_student_and_begin_edit()
             case wx.ID_DELETE:
                 self._remove_selection()
             case _:
@@ -410,6 +413,8 @@ class StudentInfoEditorPanel(wx.Panel):
 
     def _on_menu(self, event: wx.MenuEvent, item: wx.dataview.DataViewItem):
         match event.Id:
+            case wx.ID_ADD:
+                self._add_student_and_begin_edit()
             case wx.ID_DELETE:
                 self._remove_selection()
             case _:
@@ -417,6 +422,7 @@ class StudentInfoEditorPanel(wx.Panel):
 
     def _on_context_menu(self, event: wx.dataview.DataViewEvent):
         menu = wx.Menu()
+        menu.Append(wx.ID_ADD, "&Add")
         menu.Append(wx.ID_DELETE, "&Delete")
         menu.Bind(wx.EVT_MENU, lambda event, item=event.Item: self._on_menu(event, item))
         self.PopupMenu(menu, event.GetPosition())

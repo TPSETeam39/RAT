@@ -397,19 +397,22 @@ class RoleEditorPanel(wx.Panel):
         if column:
             self.dv.EditItem(item, column)
 
+    def _add_role_and_begin_edit(self):
+        rid = self.add_role(
+            Role(id=self.model.next_id, name="Role", gender=RoleGender.NEUTRAL)
+        )
+        self.dv.EditItem(
+            self.model.role_id_to_dv_item(rid),
+            self.dv.GetColumn(RoleEditorDataViewModel.COL_NAME),
+        )
+
     def on_button(self, event: wx.Event) -> None:
         """
         Handles Add/Delete button clicks.
         """
         match event.Id:
             case wx.ID_ADD:
-                rid = self.add_role(
-                    Role(id=self.model.next_id, name="Role", gender=RoleGender.NEUTRAL)
-                )
-                self.dv.EditItem(
-                    self.model.role_id_to_dv_item(rid),
-                    self.dv.GetColumn(RoleEditorDataViewModel.COL_NAME),
-                )
+                self._add_role_and_begin_edit()
             case wx.ID_DELETE:
                 self.remove_selection()
             case _:
@@ -420,6 +423,8 @@ class RoleEditorPanel(wx.Panel):
         Handles context menu actions.
         """
         match event.Id:
+            case wx.ID_ADD:
+                self._add_role_and_begin_edit()
             case wx.ID_DELETE:
                 self.remove_selection()
             case _:
@@ -430,6 +435,7 @@ class RoleEditorPanel(wx.Panel):
         Shows the context menu on right click.
         """
         menu = wx.Menu()
+        menu.Append(wx.ID_ADD, "&Add")
         menu.Append(wx.ID_DELETE, "&Delete")
         menu.Bind(wx.EVT_MENU, self.on_menu)
         self.PopupMenu(menu, event.GetPosition())
