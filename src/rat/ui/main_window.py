@@ -46,7 +46,8 @@ class MainWindow(wx.Frame):
         main_sizer.Add(upper_sizer, 1, wx.EXPAND | wx.ALL)
         main_sizer.Add(wx.StaticLine(self.panel))
         main_sizer.Add(self.calc_button, flag=wx.ALL | wx.ALIGN_RIGHT, border=5)
-        
+
+
         self.panel.SetSizerAndFit(main_sizer)
         self.Fit()
 
