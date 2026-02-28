@@ -1,10 +1,6 @@
-from copy import deepcopy
-from threading import Timer
 from typing import Tuple
 
-from pysat.examples.fm import FM
-from pysat.examples.rc2 import RC2, RC2Stratified
-from pysat.formula import IDPool, WCNFPlus, CNFPlus
+from pysat.formula import IDPool, CNFPlus
 from pysat.solvers import Solver
 
 from rat.io import (
