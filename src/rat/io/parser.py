@@ -3,7 +3,7 @@ import os
 
 from io.__init__ import Student
 
-class survey_parser:
+class SurveyParser:
     def __init__(self, file_path):
         self.file_path = file_path
 
@@ -97,7 +97,7 @@ class survey_parser:
 
             return f"Parsed {len(self.parsed_data)} survey responses."
         except Exception as e:
-            return f"Parsing error: {e}"
+            raise Exception(f"Parsing error: {e}")
 
 #if __name__ == "__main__":
 #    parser = survey_parser("test_data/result_default_settings.json")
