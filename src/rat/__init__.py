@@ -1,7 +1,7 @@
 import sys
 import traceback
 
-from .ui.wxtest import WxApp
+from .ui import RATApp
 
 def excepthook(type, value, tb):
     print("Uncaught exception:")
@@ -9,5 +9,5 @@ def excepthook(type, value, tb):
 sys.excepthook = excepthook
 
 def main() -> None:
-    app = WxApp()
+    app = RATApp()
     app.MainLoop()

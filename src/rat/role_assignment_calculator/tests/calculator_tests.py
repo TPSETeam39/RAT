@@ -58,8 +58,8 @@ class TestCalculator(unittest.TestCase):
 
     def test_equal_number_of_students_and_roles(self):
         # GIVEN
-        roles = set([Role(i) for i in range(1, 35)])
-        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 35)])
+        roles = set([Role(i) for i in range(1, 60)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 60)])
         self.calculator = Calculator(roles, students)
 
         # WHEN
@@ -75,14 +75,12 @@ class TestCalculator(unittest.TestCase):
     def test_more_students_than_roles(self):
         # GIVEN
         roles = set([Role(i) for i in range(1, 20)])
-        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 31)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 21)])
         calculator = Calculator(roles, students)
 
-        # WHEN
+        # WHEN / THEN
         role_assignments = calculator.calculate_role_assignments()
-
-        # THEN
-        self.assertEqual(role_assignments, {})
+        self.assertTrue(role_assignments == {})
 
     def test_gender_vetoes(self):
         # GIVEN
@@ -136,7 +134,7 @@ class TestCalculator(unittest.TestCase):
         role_assignments = calculator.calculate_role_assignments()
 
         # THEN
-        self.assertGreater(len(role_assignments), 0)
+        self.assertTrue(len(role_assignments) > 0)
         self.check_pairwise_distinct(role_assignments)
         self.check_no_vetoes_were_violated(role_assignments)
 
@@ -144,7 +142,7 @@ class TestCalculator(unittest.TestCase):
         # GIVEN
         roles = set([Role(i) for i in range(1, 31)])
         essential_roles = set([Role(i) for i in range(1, 10)])
-        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 10)])
+        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 12)])
         calculator = Calculator(roles, students, essential_roles=essential_roles)
 
         # WHEN
@@ -167,11 +165,7 @@ class TestCalculator(unittest.TestCase):
         role_assignments = calculator.calculate_role_assignments()
 
         # THEN
-        self.assertEqual(
-            role_assignments,
-            {},
-            f"Expected an empty dictionary, but got {role_assignments}!",
-        )
+        self.assertTrue(role_assignments == {})
 
     def test_role_couplings(self):
         """
@@ -239,8 +233,7 @@ class TestCalculator(unittest.TestCase):
             .union(set(non_binary_students))
         )
         calculator = Calculator(
-            all_roles,
-            all_students,
+            all_roles, all_students, essential_roles=set(non_binary_roles)
         )
 
         # WHEN
@@ -323,13 +316,58 @@ class TestCalculator(unittest.TestCase):
             if student.gender == StudentGender.NON_BINARY:
                 self.assertTrue(role.gender == RoleGender.NON_BINARY)
 
+    def test_priority_roles(self):
+        # GIVEN
+        normal_roles = [Role(i) for i in range(0, 30)]
+        priority_roles = [Role(i) for i in range(30, 50)]
+        students = [Student(i, StudentGender.MALE) for i in range(0, 31)]
+        calculator = Calculator(
+            set(normal_roles).union(set(priority_roles)),
+            set(students),
+            priority_roles=set(priority_roles),
+        )
+
+        # WHEN
+        role_assignments = calculator.calculate_role_assignments()
+
+        # THEN
+        self.assertTrue(len(role_assignments) > 0)
+        self.check_all_students_got_a_role(set(students), role_assignments)
+        self.check_pairwise_distinct(role_assignments)
+        self.assertTrue(
+            all(role_is_occupied(r, role_assignments) for r in priority_roles)
+        )
+
+    def test_role_blacklisting(self):
+        # GIVEN
+        roles = [Role(i) for i in range(0, 15)]
+        blacklisted_roles = [Role(i) for i in range(15, 30)]
+        students = [Student(i, StudentGender.MALE) for i in range(0, 15)]
+        calculator = Calculator(
+            set(roles).union(set(blacklisted_roles)),
+            set(students),
+            blacklisted_roles=set(blacklisted_roles),
+        )
+
+        # WHEN
+        role_assignments = calculator.calculate_role_assignments()
+        debug_print_role_assignments(role_assignments)
+
+        # THEN
+        self.assertTrue(len(role_assignments) > 0)
+        self.check_all_students_got_a_role(set(students), role_assignments)
+        self.check_pairwise_distinct(role_assignments)
+        self.assertTrue(
+            all(not role_is_occupied(r, role_assignments) for r in blacklisted_roles)
+        )
+        self.assertTrue(all(role_is_occupied(r, role_assignments) for r in roles))
+
     def check_pairwise_distinct(self, role_assignments: dict[Student, Role]):
         for stud_a, role_a in role_assignments.items():
             for stud_b, role_b in role_assignments.items():
                 if stud_a != stud_b:
-                    self.assertNotEqual(
-                        role_a,
-                        role_b,
+                    self.assertTrue(
+                        role_a != role_b,
                         f"{stud_a} and {stud_b}" f" were both assigned {role_a}!",
                     )
 
