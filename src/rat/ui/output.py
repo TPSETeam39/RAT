@@ -3,6 +3,7 @@ import wx.dataview
 
 from rat.io import Student, Role
 
+
 class OutputPanel(wx.Panel):
     """
     A simple output display for student-to-role assignments, grouped and displayed as a tree.
@@ -12,15 +13,37 @@ class OutputPanel(wx.Panel):
     COL_LAST_NAME = 1
     COL_FIRST_NAME = 2
     COL_ROLE = 3
+    COL_ROLE_GROUP = 4
 
     def __init__(self, parent: wx.Window):
         super().__init__(parent)
-        
+
         self.list = wx.dataview.TreeListCtrl(self)
-        self.list.AppendColumn("Student ID", flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
-        self.list.AppendColumn("Last Name", flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
-        self.list.AppendColumn("First Name", flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
-        self.list.AppendColumn("Role", flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE)
+        self.list.AppendColumn(
+            "Student ID",
+            flags=wx.dataview.DATAVIEW_COL_SORTABLE
+            | wx.dataview.DATAVIEW_COL_RESIZABLE,
+        )
+        self.list.AppendColumn(
+            "Last Name",
+            flags=wx.dataview.DATAVIEW_COL_SORTABLE
+            | wx.dataview.DATAVIEW_COL_RESIZABLE,
+        )
+        self.list.AppendColumn(
+            "First Name",
+            flags=wx.dataview.DATAVIEW_COL_SORTABLE
+            | wx.dataview.DATAVIEW_COL_RESIZABLE,
+        )
+        self.list.AppendColumn(
+            "Role",
+            flags=wx.dataview.DATAVIEW_COL_SORTABLE
+            | wx.dataview.DATAVIEW_COL_RESIZABLE,
+        )
+        self.list.AppendColumn(
+            "Role Group",
+            flags=wx.dataview.DATAVIEW_COL_SORTABLE
+            | wx.dataview.DATAVIEW_COL_RESIZABLE,
+        )
 
         self._init_layout()
         self._bind_event_handlers()
@@ -42,7 +65,7 @@ class OutputPanel(wx.Panel):
     def load_group(self, group_name: str, assignments: dict[Student, Role]):
         """
         Loads a list of assignments into the output display as a group.
-        
+
         :param group_name: The name of the group.
         :type group_name: str
         :param assignments: The student-to-role assignments for the group.
@@ -55,5 +78,6 @@ class OutputPanel(wx.Panel):
             self.list.SetItemText(item, self.COL_LAST_NAME, student.last_name)
             self.list.SetItemText(item, self.COL_FIRST_NAME, student.first_name)
             self.list.SetItemText(item, self.COL_ROLE, role.name)
-        
+            self.list.SetItemText(item, self.COL_ROLE_GROUP, role.group)
+
         self.list.Expand(group_root)
