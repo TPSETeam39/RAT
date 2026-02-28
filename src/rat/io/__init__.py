@@ -3,6 +3,8 @@ from typing import Tuple
 
 from enum import StrEnum, IntEnum
 
+from scipy.stats import false_discovery_control
+
 
 class StudentGender(StrEnum):
     FEMALE = "FEMALE"
@@ -57,6 +59,9 @@ class Role:
     id: int
     name: str = "NONAME"
     gender: RoleGender = RoleGender.NEUTRAL
+    group: str = "No Group"
+    essential: bool = False
+    priority: bool = False
 
     def __repr__(self):
         return f"Role ({self.id}) {self.name}: gender={self.gender}"
