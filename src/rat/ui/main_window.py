@@ -63,10 +63,17 @@ class MainWindow(wx.Frame):
 
     def _on_button(self, event: wx.Event):
         roles = self.role_editor.get_roles()
+        essential_roles = set([role for role in roles if role.essential == True])
+        priority_roles = set([role for role in roles if role.priority == True])
 
         students = self.student_editor.get_students()
 
-        calc = Calculator(roles, students)
+        calc = Calculator(
+            roles,
+            students,
+            essential_roles=essential_roles,
+            priority_roles=priority_roles,
+        )
         assignments = calc.calculate_role_assignments()
 
         OutputWindow(assignments).Show()
