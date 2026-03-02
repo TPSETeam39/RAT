@@ -54,11 +54,38 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self._on_button, self.calc_button)
     
     def _on_button(self, event: wx.Event):
-        roles = self.role_editor.get_roles()
+        """
+        Handle the click on the 'Assign Roles' button.
 
+        Shows an error dialog if role assignment calculation fails, returns
+        None, or returns an empty dictionary.
+        """
+        roles = self.role_editor.get_roles()
         students = self.student_editor.get_students()
 
         calc = Calculator(roles, students)
-        assignments = calc.calculate_role_assignments()
+
+        try:
+            assignments = calc.calculate_role_assignments()
+        except Exception as exc:
+            message = str(exc).strip() or "The tool was not able to calculate a role assignment."
+            wx.MessageBox(message, "Error", wx.OK | wx.ICON_ERROR)
+            return
+
+        if assignments is None:
+            wx.MessageBox(
+                "No role assignment could be calculated.",
+                "Error",
+                wx.OK | wx.ICON_ERROR
+            )
+            return
+
+        if assignments == {}:
+            wx.MessageBox(
+                "No valid role assignment could be found for the current students, roles and constraints.",
+                "Error",
+                wx.OK | wx.ICON_ERROR
+            )
+            return
 
         OutputWindow(assignments).Show()
