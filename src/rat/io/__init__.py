@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from typing import Tuple
-
+import json
 from enum import StrEnum, IntEnum
+
+from scipy.stats import false_discovery_control
 
 
 class StudentGender(StrEnum):
@@ -15,6 +17,13 @@ class RoleGender(StrEnum):
     MALE = "MALE"
     NON_BINARY = "NON-BINARY"
     NEUTRAL = "NEUTRAL"
+
+
+STUDENT_TO_ROLE_GENDER_MAP = {
+    StudentGender.FEMALE: RoleGender.FEMALE,
+    StudentGender.MALE: RoleGender.MALE,
+    StudentGender.NON_BINARY: RoleGender.NON_BINARY,
+}
 
 
 class GenderVetoOption(IntEnum):
@@ -57,6 +66,9 @@ class Role:
     id: int
     name: str = "NONAME"
     gender: RoleGender = RoleGender.NEUTRAL
+    group: str = "No Group"
+    essential: bool = False
+    priority: bool = False
 
     def __repr__(self):
         return f"Role ({self.id}) {self.name}: gender={self.gender}"
