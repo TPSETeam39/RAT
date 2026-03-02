@@ -32,19 +32,10 @@ def _call_sat_solver(formula: CNFPlus) -> None | list[int]:
 
 
 class Calculator:
-    def __init__(
-        self,
-        roles: set[Role],
-        students: set[Student],
-        role_couplings: RoleCouplingGraph = None,
-        essential_roles: set[Role] = None,
-        priority_roles: set[Role] = None,
-        blacklisted_roles: set[Role] = None,
-    ):
+    def __init__(self, roles: set[Role], students: set[Student]):
         self.roles = roles
-        self.essential_roles = essential_roles
-        self.priority_roles = priority_roles
-        self.blacklisted_roles = blacklisted_roles
+        self.essential_roles = set([role for role in roles if role.essential == True])
+        self.priority_roles = set([role for role in roles if role.priority == True])
         self.students = students
         self.variable_pool = IDPool()
         self._fill_variable_pool(roles, students)
@@ -139,8 +130,6 @@ class Calculator:
         self._every_student_has_exactly_one_role(formula)
         self._students_have_pairwise_different_roles(formula)
         self._enforce_gender_vetoes(formula)
-        if self.blacklisted_roles is not None:
-            self._blacklist_roles(formula)
         if self.essential_roles is not None:
             self._enforce_essential_roles(formula)
         return formula
@@ -259,11 +248,6 @@ class Calculator:
             for student in self.students:
                 at_leasts.append(-1 * self._student_has_role(student, role))
             formula.append([at_leasts, len(self.students) - 1], is_atmost=True)
-
-    def _blacklist_roles(self, formula: CNFPlus):
-        for role in self.blacklisted_roles:
-            for student in self.students:
-                formula.append([-1 * self._student_has_role(student, role)])
 
     def _enforce_n_students_to_get_gender_matching_role(self, formula: CNFPlus, n: int):
         """

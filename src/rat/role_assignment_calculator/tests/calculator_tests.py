@@ -2,7 +2,6 @@ from ..calculator import Calculator
 from rat.io import (
     Student,
     Role,
-    RoleCouplingGraph,
     RoleGender,
     GenderVetoOption,
     StudentGender,
@@ -140,10 +139,10 @@ class TestCalculator(unittest.TestCase):
 
     def test_essential_roles(self):
         # GIVEN
-        roles = set([Role(i) for i in range(1, 31)])
-        essential_roles = set([Role(i) for i in range(1, 10)])
+        non_essential_roles = set([Role(i) for i in range(10, 31)])
+        essential_roles = set([Role(i, essential=True) for i in range(1, 10)])
         students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 12)])
-        calculator = Calculator(roles, students, essential_roles=essential_roles)
+        calculator = Calculator(non_essential_roles.union(essential_roles), students)
 
         # WHEN
         role_assignments = calculator.calculate_role_assignments()
@@ -156,53 +155,16 @@ class TestCalculator(unittest.TestCase):
 
     def test_more_essential_roles_than_students(self):
         # GIVEN
-        roles = set([Role(i) for i in range(1, 31)])
-        essential_roles = set([Role(i) for i in range(1, 10)])
+        non_essential_roles = set([Role(i) for i in range(10, 31)])
+        essential_roles = set([Role(i, essential=True) for i in range(1, 10)])
         students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 5)])
-        calculator = Calculator(roles, students, essential_roles=essential_roles)
+        calculator = Calculator(non_essential_roles.union(essential_roles), students)
 
         # WHEN
         role_assignments = calculator.calculate_role_assignments()
 
         # THEN
         self.assertTrue(role_assignments == {})
-
-    def test_role_couplings(self):
-        """
-        This also tests the transitivity of essential roles
-        Role1 is essential and coupled to Role2 --> Role2 is also essential
-        Role2 is essential and coupled to Role3 --> Role3 is also essential
-        Role4 is essential and coupled to Role5 --> Role5 is also essential
-        """
-        # GIVEN
-        roles = [Role(i) for i in range(1, 31)]
-        essential_roles = {roles[0]}
-        role_coupling_graph = RoleCouplingGraph(
-            [
-                (roles[0], roles[1]),
-                (roles[1], roles[2]),
-                (roles[2], roles[3]),
-                (roles[3], roles[4]),
-            ]
-        )
-        students = set([Student(i, StudentGender.NON_BINARY) for i in range(1, 6)])
-        calculator = Calculator(
-            set(roles),
-            students,
-            role_couplings=role_coupling_graph,
-            essential_roles=essential_roles,
-        )
-
-        # WHEN
-        role_assignments = calculator.calculate_role_assignments()
-        debug_print_role_assignments(role_assignments)
-
-        # THEN
-        self.assertTrue(len(role_assignments) > 0)
-        self.check_pairwise_distinct(role_assignments)
-        self.check_all_essential_roles_were_fulfilled(role_assignments, essential_roles)
-        for n in range(1, 5):
-            self.assertTrue(role_is_occupied(roles[n], role_assignments))
 
     def test_preference_for_own_gender(self):
         # GIVEN
@@ -212,7 +174,13 @@ class TestCalculator(unittest.TestCase):
             Role(i, name=f"FemaleRole{i}", gender=RoleGender.FEMALE) for i in r
         ]
         non_binary_roles = [
-            Role(i, name=f"NonBinaryRole{i}", gender=RoleGender.NON_BINARY) for i in r
+            Role(
+                i,
+                name=f"NonBinaryRole{i}",
+                gender=RoleGender.NON_BINARY,
+                essential=True,
+            )
+            for i in r
         ]
 
         male_students = [
@@ -232,9 +200,7 @@ class TestCalculator(unittest.TestCase):
             .union(set(female_students))
             .union(set(non_binary_students))
         )
-        calculator = Calculator(
-            all_roles, all_students, essential_roles=set(non_binary_roles)
-        )
+        calculator = Calculator(all_roles, all_students)
 
         # WHEN
         role_assignments = calculator.calculate_role_assignments()
@@ -319,12 +285,10 @@ class TestCalculator(unittest.TestCase):
     def test_priority_roles(self):
         # GIVEN
         normal_roles = [Role(i) for i in range(0, 30)]
-        priority_roles = [Role(i) for i in range(30, 50)]
+        priority_roles = [Role(i, priority=True) for i in range(30, 50)]
         students = [Student(i, StudentGender.MALE) for i in range(0, 31)]
         calculator = Calculator(
-            set(normal_roles).union(set(priority_roles)),
-            set(students),
-            priority_roles=set(priority_roles),
+            set(normal_roles).union(set(priority_roles)), set(students)
         )
 
         # WHEN
@@ -337,30 +301,6 @@ class TestCalculator(unittest.TestCase):
         self.assertTrue(
             all(role_is_occupied(r, role_assignments) for r in priority_roles)
         )
-
-    def test_role_blacklisting(self):
-        # GIVEN
-        roles = [Role(i) for i in range(0, 15)]
-        blacklisted_roles = [Role(i) for i in range(15, 30)]
-        students = [Student(i, StudentGender.MALE) for i in range(0, 15)]
-        calculator = Calculator(
-            set(roles).union(set(blacklisted_roles)),
-            set(students),
-            blacklisted_roles=set(blacklisted_roles),
-        )
-
-        # WHEN
-        role_assignments = calculator.calculate_role_assignments()
-        debug_print_role_assignments(role_assignments)
-
-        # THEN
-        self.assertTrue(len(role_assignments) > 0)
-        self.check_all_students_got_a_role(set(students), role_assignments)
-        self.check_pairwise_distinct(role_assignments)
-        self.assertTrue(
-            all(not role_is_occupied(r, role_assignments) for r in blacklisted_roles)
-        )
-        self.assertTrue(all(role_is_occupied(r, role_assignments) for r in roles))
 
     def check_pairwise_distinct(self, role_assignments: dict[Student, Role]):
         for stud_a, role_a in role_assignments.items():
