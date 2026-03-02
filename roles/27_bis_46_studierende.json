@@ -1,0 +1,370 @@
+[
+  {
+    "id": 0,
+    "name": "Anpu, Kris",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8A",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 1,
+    "name": "Apeiro, Sophia",
+    "gender": "FEMALE",
+    "group": "Klasse 8A",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 2,
+    "name": "Ask, Cem",
+    "gender": "MALE",
+    "group": "Klasse 8A",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 3,
+    "name": "Fürst, Amar",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8A",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 4,
+    "name": "Herbst, David",
+    "gender": "MALE",
+    "group": "Klasse 8A",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 5,
+    "name": "Hermann, Lotte",
+    "gender": "FEMALE",
+    "group": "Klasse 8A",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 6,
+    "name": "Klein, Toni",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8A",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 7,
+    "name": "Koch, Erwin",
+    "gender": "MALE",
+    "group": "Klasse 8A",
+    "essential": false,
+    "priority": true
+  },
+  {
+    "id": 8,
+    "name": "Lautner, Jona",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8A",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 9,
+    "name": "Mair, Julius",
+    "gender": "MALE",
+    "group": "Klasse 8A",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 10,
+    "name": "Mittermeier, Hannah",
+    "gender": "FEMALE",
+    "group": "Klasse 8A",
+    "essential": false,
+    "priority": true
+  },
+  {
+    "id": 11,
+    "name": "Müller, Leo",
+    "gender": "MALE",
+    "group": "Klasse 8A",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 12,
+    "name": "Nube, Felipe",
+    "gender": "MALE",
+    "group": "Klasse 8A",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 13,
+    "name": "Rittersprung, Ava",
+    "gender": "MALE",
+    "group": "Klasse 8A",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 14,
+    "name": "Sering, Ailyn (Kim)",
+    "gender": "NON_BINARY",
+    "group": "Klasse 8A",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 15,
+    "name": "Schmidt, Luca",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8A",
+    "essential": false,
+    "priority": true
+  },
+  {
+    "id": 16,
+    "name": "Wagner, Leonie",
+    "gender": "FEMALE",
+    "group": "Klasse 8A",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 17,
+    "name": "Zena, Nayk",
+    "gender": "MALE",
+    "group": "Klasse 8A",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 18,
+    "name": "Beil, Kara",
+    "gender": "FEMALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 19,
+    "name": "Christmann, Flo",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8B",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 20,
+    "name": "Domstoll, Alex",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8B",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 21,
+    "name": "Frieden, Johannes",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 22,
+    "name": "Hanke, Elena",
+    "gender": "FEMALE",
+    "group": "Klasse 8B",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 23,
+    "name": "Huber, Leon",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 24,
+    "name": "Jung, Maria",
+    "gender": "FEMALE",
+    "group": "Klasse 8B",
+    "essential": false,
+    "priority": true
+  },
+  {
+    "id": 25,
+    "name": "Knopf, Sina",
+    "gender": "FEMALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 26,
+    "name": "Krüger, Max",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 27,
+    "name": "Linda, Issa",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 28,
+    "name": "Liu, Wanja",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8B",
+    "essential": false,
+    "priority": true
+  },
+  {
+    "id": 29,
+    "name": "Metiner, Yagmur",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 30,
+    "name": "Musalaha, Martin",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 31,
+    "name": "Pirog, Kamil",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 32,
+    "name": "Schubert, Josephine",
+    "gender": "FEMALE",
+    "group": "Klasse 8B",
+    "essential": false,
+    "priority": false
+  },
+  {
+    "id": 33,
+    "name": "Sreca, Mike",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": false,
+    "priority": true
+  },
+  {
+    "id": 34,
+    "name": "Stumpf, Bente",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 35,
+    "name": "Unhoch, Lilli",
+    "gender": "FEMALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 36,
+    "name": "Förderschullehrkraft Deghan",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 37,
+    "name": "Lehrkraft Alidoust",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 38,
+    "name": "Lehrkraft Amara",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 39,
+    "name": "Lehrkraft Böhmer",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 40,
+    "name": "Lehrkraft Emminger",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 41,
+    "name": "Lehrkraft Hans-Meric",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 42,
+    "name": "Lehrkraft im Vorbereitungsdienst Park",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": false,
+    "priority": true
+  },
+  {
+    "id": 43,
+    "name": "Lehrkraft Zöpfel",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 44,
+    "name": "Schulleitung von Buchtal",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": false,
+    "priority": true
+  },
+  {
+    "id": 45,
+    "name": "Schulsozialarbeit Adeyemi",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": false,
+    "priority": true
+  }
+]

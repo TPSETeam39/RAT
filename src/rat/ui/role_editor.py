@@ -8,7 +8,6 @@ import wx.dataview
 from rat.io import Role as IoRole
 from rat.io import RoleGender
 
-
 ROOT = wx.dataview.DataViewItem(0)
 
 # Imports for Role Editor
@@ -19,13 +18,21 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
     """
     The DataViewModel used by the role editor.
 
-    Stores roles with ID, name and gender.
+    Stores roles with ID, name, gender and group, along with whether
+    a role is essential; and whether it is a priority role.
     Roles can be added, removed and edited.
     """
 
     COL_ID = 0
     COL_NAME = 1
     COL_GENDER = 2
+    COL_GROUP = 3
+    COL_IMPORTANCE = 4
+
+    ESSENTIAL = "Essential"
+    PRIORITY = "Priority"
+    NONE = "None"
+    IMPORTANCE_CHOICES = [ESSENTIAL, PRIORITY, NONE]
 
     def __init__(self, warn: Optional[Callable[[str], None]] = None):
         """
@@ -110,6 +117,14 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 return role.name
             case self.COL_GENDER:
                 return self.gender_label_by_value.get(role.gender, str(role.gender))
+            case self.COL_GROUP:
+                return role.group
+            case self.COL_IMPORTANCE:
+                return (
+                    self.ESSENTIAL
+                    if role.essential
+                    else (self.PRIORITY if role.priority else self.NONE)
+                )
             case _:
                 raise Exception("invalid column")
 
@@ -158,6 +173,30 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
 
                 new_gender = self.gender_value_by_label[label]
                 self.roles[rid] = Role(id=role.id, name=role.name, gender=new_gender)
+                return True
+
+            case self.COL_GROUP:
+                new_group_name = (str(variant) if variant is not None else "").strip()
+                self.roles[rid] = Role(
+                    id=role.id,
+                    name=role.name,
+                    gender=role.gender,
+                    group=new_group_name,
+                    essential=role.essential,
+                    priority=role.priority,
+                )
+                return True
+
+            case self.COL_IMPORTANCE:
+                importance = str(variant) if variant is not None else ""
+                self.roles[rid] = Role(
+                    id=role.id,
+                    name=role.name,
+                    gender=role.gender,
+                    group=role.group,
+                    essential=(importance == self.ESSENTIAL),
+                    priority=(importance == self.PRIORITY),
+                )
                 return True
 
             case _:
@@ -253,7 +292,7 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
     def get_roles_map(self) -> dict[int, Role]:
         """
         Gets all roles in this model as a map of role IDs to Roles.
-        
+
         :return: The map of role IDs to roles.
         :rtype: dict[int, Role]
         """
@@ -262,7 +301,7 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
     def get_roles(self) -> set[Role]:
         """
         Gets all roles in this model as a set.
-        
+
         :return: The set of roles.
         :rtype: set[Role]
         """
@@ -412,12 +451,24 @@ class RoleEditorPanel(wx.Panel):
         Adds the ID, Name and Gender columns.
         """
         self.dv.AppendTextColumn("ID", RoleEditorDataViewModel.COL_ID)
-        self.dv.AppendColumn(self.make_text_column("Name", RoleEditorDataViewModel.COL_NAME))
+        self.dv.AppendColumn(
+            self.make_text_column("Name", RoleEditorDataViewModel.COL_NAME)
+        )
         self.dv.AppendColumn(
             self.make_choice_column(
                 "Gender",
                 self.model.get_gender_choices(),
                 RoleEditorDataViewModel.COL_GENDER,
+            )
+        )
+        self.dv.AppendColumn(
+            self.make_text_column("Group", RoleEditorDataViewModel.COL_GROUP)
+        )
+        self.dv.AppendColumn(
+            self.make_choice_column(
+                "Importance",
+                RoleEditorDataViewModel.IMPORTANCE_CHOICES,
+                RoleEditorDataViewModel.COL_IMPORTANCE,
             )
         )
 
@@ -431,7 +482,8 @@ class RoleEditorPanel(wx.Panel):
             wx.dataview.DataViewTextRenderer(mode=wx.dataview.DATAVIEW_CELL_EDITABLE),
             model_column,
             width=180,
-            flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE,
+            flags=wx.dataview.DATAVIEW_COL_SORTABLE
+            | wx.dataview.DATAVIEW_COL_RESIZABLE,
         )
 
     @staticmethod
@@ -446,7 +498,8 @@ class RoleEditorPanel(wx.Panel):
             wx.dataview.DataViewChoiceRenderer(choices),
             model_column,
             width=140,
-            flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE,
+            flags=wx.dataview.DATAVIEW_COL_SORTABLE
+            | wx.dataview.DATAVIEW_COL_RESIZABLE,
         )
 
     def add_role(self, role: Role) -> int:
@@ -520,7 +573,7 @@ class RoleEditorPanel(wx.Panel):
     def get_roles_map(self) -> dict[int, Role]:
         """
         Gets all roles in this editor as a map of role IDs to Roles.
-        
+
         :return: The map of role IDs to roles.
         :rtype: dict[int, Role]
         """
@@ -529,7 +582,7 @@ class RoleEditorPanel(wx.Panel):
     def get_roles(self) -> set[Role]:
         """
         Gets all roles in this editor as a set.
-        
+
         :return: The set of roles.
         :rtype: set[Role]
         """
