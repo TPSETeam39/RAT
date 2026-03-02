@@ -262,7 +262,12 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         if not name or self._normalize_name(name) in self._names_present:
             name = self._make_unique_default_name("Role")
 
-        role = Role(id=rid, name=name, gender=role.gender)
+        role = Role(id=rid,
+                    name=name,
+                    gender=role.gender,
+                    group=role.group,
+                    essential=role.essential,
+                    priority=role.priority)
         self.roles[rid] = role
 
         norm = self._normalize_name(role.name)
@@ -326,6 +331,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 "name": role.name,
                 # Store the enum as its name
                 "gender": role.gender.name,
+                "group": role.group,
+                "essential": role.essential,
+                "priority": role.priority
             }
             for role in self.roles.values()
         ]
@@ -364,6 +372,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 id=int(entry["id"]),
                 name=entry["name"],
                 gender=gender,
+                group=entry["group"],
+                essential=entry["essential"],
+                priority=entry["priority"]
             )
 
             # Add role using existing validation logic
