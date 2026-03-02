@@ -6,6 +6,7 @@ import wx
 import wx.dataview
 
 from rat.io import StudentGender, RoleGender, Student, GenderVetoOption
+from rat.io.survey_parser import SurveyParser
 
 # look at the wxWidgets dataview sample to understand this shit
 class StudentInfoDataViewModel(wx.dataview.DataViewModel):
@@ -277,6 +278,8 @@ class StudentInfoEditorPanel(wx.Panel):
     The stored students can be accessed using the public API.
     """
 
+    ID_IMPORT: int = wx.Window.NewControlId()
+
     def __init__(self, parent: wx.Window):
         super().__init__(parent)
 
@@ -348,7 +351,10 @@ class StudentInfoEditorPanel(wx.Panel):
         button_sizer.Add(button_add, flag=wx.RIGHT, border=5)
 
         button_delete = wx.Button(self, id=wx.ID_DELETE, label="Delete")
-        button_sizer.Add(button_delete)
+        button_sizer.Add(button_delete, flag=wx.RIGHT, border=5)
+
+        button_import = wx.Button(self, id=self.ID_IMPORT, label="Import")
+        button_sizer.Add(button_import)
 
         top_sizer.Add(button_sizer, flag=wx.ALIGN_RIGHT | wx.ALL, border=5)
 
@@ -390,6 +396,12 @@ class StudentInfoEditorPanel(wx.Panel):
         for id in self._get_selections():
             self._model.remove_student_by_id(id)
     
+    def _error(self, message: str):
+        wx.MessageBox(message, "Student Editor", wx.OK | wx.ICON_ERROR, self)
+    
+    def _warn(self, message: str):
+        wx.MessageBox(message, "Student Editor", wx.OK | wx.ICON_WARNING, self)
+
     def _on_dataview_item_activated(self, event: wx.dataview.DataViewEvent):
         item = event.GetItem()
         column = event.GetDataViewColumn()
@@ -402,12 +414,38 @@ class StudentInfoEditorPanel(wx.Panel):
         # start editing in the first column automatically
         self._dataview.EditItem(self._model.student_id_to_dv_item(id), self._dataview.GetColumn(self._model.COL_LAST_NAME))
     
+    def _import(self):
+        filepath = ""
+
+        with wx.FileDialog(self, "Import from survey", wildcard="JSON files (*.json)|*.json", style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
+            if file_dialog.ShowModal() == wx.ID_CANCEL:
+                self._warn("No file was selected for import")
+                return
+            
+            filepath = file_dialog.GetPath()
+
+
+        self._model = StudentInfoDataViewModel()
+        self._dataview.AssociateModel(self._model)
+
+        try:
+            parser = SurveyParser(filepath)
+            students = parser.load_and_parse()
+        except Exception as e:
+            self._error(f"Could not parse survey data:\n{e}")
+            return
+        
+        for student in students:
+            self.add_student(student)
+
     def _on_button(self, event: wx.Event):
         match event.Id:
             case wx.ID_ADD:
                 self._add_student_and_begin_edit()
             case wx.ID_DELETE:
                 self._remove_selection()
+            case self.ID_IMPORT:
+                self._import()
             case _:
                 raise Exception("invalid button")
 
