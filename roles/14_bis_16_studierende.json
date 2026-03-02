@@ -1,0 +1,130 @@
+[
+  {
+    "id": 18,
+    "name": "Beil, Kara",
+    "gender": "FEMALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 21,
+    "name": "Frieden, Johannes",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 23,
+    "name": "Huber, Leon",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 25,
+    "name": "Knopf, Sina",
+    "gender": "FEMALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 26,
+    "name": "Krüger, Max",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 27,
+    "name": "Linda, Issa",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 29,
+    "name": "Metiner, Yagmur",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 30,
+    "name": "Musalaha, Martin",
+    "gender": "MALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 34,
+    "name": "Stumpf, Bente",
+    "gender": "NEUTRAL",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 35,
+    "name": "Unhoch, Lilli",
+    "gender": "FEMALE",
+    "group": "Klasse 8B",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 36,
+    "name": "Förderschullehrkraft Deghan",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 38,
+    "name": "Lehrkraft Amara",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 39,
+    "name": "Lehrkraft Böhmer",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 42,
+    "name": "Lehrkraft im Vorbereitungsdienst Park",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": true,
+    "priority": false
+  },
+  {
+    "id": 44,
+    "name": "Schulleitung von Buchtal",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": false,
+    "priority": true
+  },
+  {
+    "id": 45,
+    "name": "Schulsozialarbeit Adeyemi",
+    "gender": "NEUTRAL",
+    "group": "Lehrkraft/Schulpersonal",
+    "essential": false,
+    "priority": true
+  }
+]

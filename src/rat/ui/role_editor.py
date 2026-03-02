@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import Callable, Optional, TypeAlias, override
-
+import json
+from pathlib import Path
 import wx
 import wx.dataview
 
 from rat.io import Role as IoRole
 from rat.io import RoleGender
-
 
 ROOT = wx.dataview.DataViewItem(0)
 
@@ -18,13 +18,21 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
     """
     The DataViewModel used by the role editor.
 
-    Stores roles with ID, name and gender.
+    Stores roles with ID, name, gender and group, along with whether
+    a role is essential; and whether it is a priority role.
     Roles can be added, removed and edited.
     """
 
     COL_ID = 0
     COL_NAME = 1
     COL_GENDER = 2
+    COL_GROUP = 3
+    COL_IMPORTANCE = 4
+
+    ESSENTIAL = "Essential"
+    PRIORITY = "Priority"
+    NONE = "None"
+    IMPORTANCE_CHOICES = [ESSENTIAL, PRIORITY, NONE]
 
     def __init__(self, warn: Optional[Callable[[str], None]] = None):
         """
@@ -109,6 +117,14 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 return role.name
             case self.COL_GENDER:
                 return self.gender_label_by_value.get(role.gender, str(role.gender))
+            case self.COL_GROUP:
+                return role.group
+            case self.COL_IMPORTANCE:
+                return (
+                    self.ESSENTIAL
+                    if role.essential
+                    else (self.PRIORITY if role.priority else self.NONE)
+                )
             case _:
                 raise Exception("invalid column")
 
@@ -157,6 +173,30 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
 
                 new_gender = self.gender_value_by_label[label]
                 self.roles[rid] = Role(id=role.id, name=role.name, gender=new_gender)
+                return True
+
+            case self.COL_GROUP:
+                new_group_name = (str(variant) if variant is not None else "").strip()
+                self.roles[rid] = Role(
+                    id=role.id,
+                    name=role.name,
+                    gender=role.gender,
+                    group=new_group_name,
+                    essential=role.essential,
+                    priority=role.priority,
+                )
+                return True
+
+            case self.COL_IMPORTANCE:
+                importance = str(variant) if variant is not None else ""
+                self.roles[rid] = Role(
+                    id=role.id,
+                    name=role.name,
+                    gender=role.gender,
+                    group=role.group,
+                    essential=(importance == self.ESSENTIAL),
+                    priority=(importance == self.PRIORITY),
+                )
                 return True
 
             case _:
@@ -252,7 +292,7 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
     def get_roles_map(self) -> dict[int, Role]:
         """
         Gets all roles in this model as a map of role IDs to Roles.
-        
+
         :return: The map of role IDs to roles.
         :rtype: dict[int, Role]
         """
@@ -261,12 +301,73 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
     def get_roles(self) -> set[Role]:
         """
         Gets all roles in this model as a set.
-        
+
         :return: The set of roles.
         :rtype: set[Role]
         """
         return set(self.get_roles_map().values())
 
+    def export_to_json(self, path: str) -> None:
+        """
+         Exports all currently stored roles to a JSON file.
+
+         Each role is converted into a dictionary containing:
+        - id
+        - name
+        - gender (stored as enum name)
+
+         The resulting list is written to disk in a human-readable format.
+        """
+
+        # Convert all Role objects into serializable dictionaries
+        data = [
+            {
+                "id": role.id,
+                "name": role.name,
+                # Store the enum as its name
+                "gender": role.gender.name,
+            }
+            for role in self.roles.values()
+        ]
+        # Write JSON to file using UTF-8 encoding
+        # indent=4 ensures readable formatting
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+
+    def import_from_json(self, path: str) -> None:
+        """
+        Imports roles from a JSON file.
+        Existing roles in the model will be completely cleared
+        before importing the new data..
+        """
+        # Load JSON content from file
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        # Remove existing roles one by one
+        for rid in list(self.roles.keys()):
+            self.remove_role_by_id(rid)
+
+        # Clear internal caches and state
+        self.roles.clear()
+        self._names_present.clear()
+        self._name_by_id.clear()
+        self.next_id = 0
+
+        # Recreate roles from imported JSON
+        for entry in data:
+            # Convert stored string back to enum
+            gender = RoleGender[entry["gender"]]
+
+            # Create new Role object
+            role = Role(
+                id=int(entry["id"]),
+                name=entry["name"],
+                gender=gender,
+            )
+
+            # Add role using existing validation logic
+            self.add_role(role)
 
 class RoleEditorPanel(wx.Panel):
     """
@@ -313,7 +414,22 @@ class RoleEditorPanel(wx.Panel):
         button_sizer.Add(button_delete, 0)
 
         top_sizer.Add(button_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+
+        # Import / Export Buttons
+        button_import = wx.Button(self, label="Import JSON")
+        button_sizer.Add(button_import, 0, wx.RIGHT, 5)
+
+        button_export = wx.Button(self, label="Export JSON")
+        button_sizer.Add(button_export, 0)
+
+        top_sizer.Add(button_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
         self.SetSizerAndFit(top_sizer)
+
+        # Event-Bindings
+        button_add.Bind(wx.EVT_BUTTON, self.on_button)
+        button_delete.Bind(wx.EVT_BUTTON, self.on_button)
+        button_import.Bind(wx.EVT_BUTTON, self.on_import)
+        button_export.Bind(wx.EVT_BUTTON, self.on_export)
 
     def bind_event_handlers(self) -> None:
         """
@@ -335,12 +451,24 @@ class RoleEditorPanel(wx.Panel):
         Adds the ID, Name and Gender columns.
         """
         self.dv.AppendTextColumn("ID", RoleEditorDataViewModel.COL_ID)
-        self.dv.AppendColumn(self.make_text_column("Name", RoleEditorDataViewModel.COL_NAME))
+        self.dv.AppendColumn(
+            self.make_text_column("Name", RoleEditorDataViewModel.COL_NAME)
+        )
         self.dv.AppendColumn(
             self.make_choice_column(
                 "Gender",
                 self.model.get_gender_choices(),
                 RoleEditorDataViewModel.COL_GENDER,
+            )
+        )
+        self.dv.AppendColumn(
+            self.make_text_column("Group", RoleEditorDataViewModel.COL_GROUP)
+        )
+        self.dv.AppendColumn(
+            self.make_choice_column(
+                "Importance",
+                RoleEditorDataViewModel.IMPORTANCE_CHOICES,
+                RoleEditorDataViewModel.COL_IMPORTANCE,
             )
         )
 
@@ -354,7 +482,8 @@ class RoleEditorPanel(wx.Panel):
             wx.dataview.DataViewTextRenderer(mode=wx.dataview.DATAVIEW_CELL_EDITABLE),
             model_column,
             width=180,
-            flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE,
+            flags=wx.dataview.DATAVIEW_COL_SORTABLE
+            | wx.dataview.DATAVIEW_COL_RESIZABLE,
         )
 
     @staticmethod
@@ -369,7 +498,8 @@ class RoleEditorPanel(wx.Panel):
             wx.dataview.DataViewChoiceRenderer(choices),
             model_column,
             width=140,
-            flags=wx.dataview.DATAVIEW_COL_SORTABLE | wx.dataview.DATAVIEW_COL_RESIZABLE,
+            flags=wx.dataview.DATAVIEW_COL_SORTABLE
+            | wx.dataview.DATAVIEW_COL_RESIZABLE,
         )
 
     def add_role(self, role: Role) -> int:
@@ -443,7 +573,7 @@ class RoleEditorPanel(wx.Panel):
     def get_roles_map(self) -> dict[int, Role]:
         """
         Gets all roles in this editor as a map of role IDs to Roles.
-        
+
         :return: The map of role IDs to roles.
         :rtype: dict[int, Role]
         """
@@ -452,8 +582,63 @@ class RoleEditorPanel(wx.Panel):
     def get_roles(self) -> set[Role]:
         """
         Gets all roles in this editor as a set.
-        
+
         :return: The set of roles.
         :rtype: set[Role]
         """
         return self.model.get_roles()
+
+    def on_export(self, event):
+        """
+            Handles the 'Export JSON' button click.
+
+            Opens a file save dialog that allows the user to choose
+            where the roles should be saved.
+
+            If the user confirms, the method delegates the actual
+            export logic to the data model.
+            """
+
+        # Open a file dialog configured for saving JSON files
+        with wx.FileDialog(
+                self,
+                "Export roles to JSON",
+                wildcard="JSON files (*.json)|*.json",
+                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+        ) as file_dialog:
+            # If the user cancels the dialog, abort the operation
+            if file_dialog.ShowModal() == wx.ID_CANCEL:
+                return
+            # Retrieve the selected file path
+            path = file_dialog.GetPath()
+
+            # Delegate export logic to the model
+            # The panel does not handle business logic directly
+            self.model.export_to_json(path)
+
+    def on_import(self, event):
+        """
+           Handles the 'Import JSON' button click.
+
+           Opens a file open dialog that allows the user
+           to select a JSON file containing roles.
+
+           The panel delegates the actual import logic to the model.
+        """
+        # Open a file dialog configured for loading JSON files
+        with wx.FileDialog(
+                self,
+                "Import roles from JSON",
+                wildcard="JSON files (*.json)|*.json",
+                style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+        ) as file_dialog:
+
+            # Abort if user cancels
+            if file_dialog.ShowModal() == wx.ID_CANCEL:
+                return
+
+            # Get selected file path
+            path = file_dialog.GetPath()
+
+            # Delegate import logic to the model
+            self.model.import_from_json(path)
