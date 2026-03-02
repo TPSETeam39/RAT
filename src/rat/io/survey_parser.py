@@ -11,8 +11,8 @@ class Mapping:
     key_first_name: str
     key_last_name: str
     key_gender: str
-    key_veto_male: str
     key_veto_female: str
+    key_veto_male: str
     key_veto_non_binary: str
     value_gender_map: dict
 
@@ -21,8 +21,6 @@ class SurveyParser:
     def __init__(self, file_path: str):
         self._file_path: str = file_path
 
-        self.parsed_data: list[Student] = []
-
         # result_question_codes.json mapping
         self._mapping_1 = Mapping(
             key_id="id",
@@ -30,9 +28,9 @@ class SurveyParser:
             key_first_name="Q001[SQ001]",
             key_last_name="Q001[SQ002]",
             key_gender="Q002",
-            key_veto_male="Q003[SQ001]",
-            key_veto_female="Q003[SQ002]",
-            key_veto_non_binary="Q003[SQ003]",
+            key_veto_female="Q003[SQ003]",
+            key_veto_male="Q003[SQ002]",
+            key_veto_non_binary="Q003[SQ001]",
             value_gender_map={
                 "Weiblich": StudentGender.FEMALE,
                 "Männlich": StudentGender.MALE,
@@ -59,7 +57,7 @@ class SurveyParser:
         # add more mappings as needed
         self._mapping_used: Mapping
 
-    def load_and_parse(self):
+    def load_and_parse(self) -> set[Student]:
         """Loads and parses the JSON survey data."""
         if not os.path.exists(self._file_path):
             raise Exception(f"File {self._file_path} not found")
@@ -82,9 +80,8 @@ class SurveyParser:
                 case _:
                     raise Exception("Parsing error: Unknown survey format")
 
-            for entry in responses:
-                print(type(entry))
-                
+            students = set()
+            for entry in responses:                
                 # skip unfinished responses
                 if not entry[self._mapping_used.key_submitdate]:
                     continue
@@ -127,6 +124,7 @@ class SurveyParser:
                 #             )
                 #         )
                 # putting students into the parsed data list
-                self.parsed_data.append(student_new)
+                students.add(student_new)
+            return students
         except Exception as e:
             raise Exception(f"Parsing error: {e}")
