@@ -2,6 +2,7 @@ import wx
 import wx.dataview
 
 from .editor import StudentInfoEditorPanel, StudentInfoDataViewModel
+from rat.io.parser import SurveyParser
 
 class WxApp(wx.App):
     def __init__(self):
@@ -34,9 +35,9 @@ class TestWindow(wx.Frame):
         #self.label = wx.StaticText(self.panel, label="Hi from wxPython!")
         #main_sizer.Add(self.label)
 
-        #self.button = wx.Button(self.panel, label="Press me!")
-        #self.Bind(wx.EVT_BUTTON, self.on_button, self.button)
-        #main_sizer.Add(self.button)
+        self.button = wx.Button(self.panel, label="Press me!")
+        self.Bind(wx.EVT_BUTTON, self.on_button, self.button)
+        main_sizer.Add(self.button)
 
         self.test = StudentInfoEditorPanel(self.panel)
         #self.test.BackgroundColour = wx.RED
@@ -52,4 +53,8 @@ class TestWindow(wx.Frame):
         self.Fit()
     
     def on_button(self, event: wx.Event):
-        self.test.load_test_data()
+        parser = SurveyParser("result_default_settings.json")
+        
+        parser.load_and_parse()
+        for student in parser.parsed_data:
+            self.test.add_student(student)
