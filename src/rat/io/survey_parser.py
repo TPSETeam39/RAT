@@ -113,17 +113,7 @@ class SurveyParser:
                     gender=self._mapping_used.value_gender_map[entry.get(self._mapping_used.key_gender, "N/A")],
                     gender_veto_option=veto_option,
                 )
-                # # checking if student already exists in parsed data
-                # if any(s.last_name == student_new.last_name and s.first_name == student_new.first_name for s in self.parsed_data):
-                #     # old entry will be deleted
-                #     self.parsed_data.pop(
-                #         self.parsed_data.index(
-                #             next(
-                #                     s for s in self.parsed_data if s.last_name == student_new.last_name and s.first_name == student_new.first_name
-                #                 )
-                #             )
-                #         )
-                # putting students into the parsed data list
+
                 students.add(student_new)
             return students
         except Exception as e:
