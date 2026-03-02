@@ -411,9 +411,7 @@ class RoleEditorPanel(wx.Panel):
         button_sizer.Add(button_add, 0, wx.RIGHT, 5)
 
         button_delete = wx.Button(self, id=wx.ID_DELETE, label="Delete")
-        button_sizer.Add(button_delete, 0)
-
-        top_sizer.Add(button_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        button_sizer.Add(button_delete, 0, wx.RIGHT, 5)
 
         # Import / Export Buttons
         button_import = wx.Button(self, label="Import JSON")
