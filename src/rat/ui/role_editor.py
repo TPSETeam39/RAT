@@ -262,7 +262,14 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         if not name or self._normalize_name(name) in self._names_present:
             name = self._make_unique_default_name("Role")
 
-        role = Role(id=rid, name=name, gender=role.gender)
+        role = Role(
+            id=rid,
+            name=name,
+            gender=role.gender,
+            group=role.group,
+            essential=role.essential,
+            priority=role.priority,
+        )
         self.roles[rid] = role
 
         norm = self._normalize_name(role.name)
@@ -326,6 +333,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 "name": role.name,
                 # Store the enum as its name
                 "gender": role.gender.name,
+                "group": role.group,
+                "essential": role.essential,
+                "priority": role.priority,
             }
             for role in self.roles.values()
         ]
@@ -364,10 +374,14 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 id=int(entry["id"]),
                 name=entry["name"],
                 gender=gender,
+                group=entry["group"],
+                essential=entry["essential"],
+                priority=entry["priority"],
             )
 
             # Add role using existing validation logic
             self.add_role(role)
+
 
 class RoleEditorPanel(wx.Panel):
     """
@@ -590,21 +604,21 @@ class RoleEditorPanel(wx.Panel):
 
     def on_export(self, event):
         """
-            Handles the 'Export JSON' button click.
+        Handles the 'Export JSON' button click.
 
-            Opens a file save dialog that allows the user to choose
-            where the roles should be saved.
+        Opens a file save dialog that allows the user to choose
+        where the roles should be saved.
 
-            If the user confirms, the method delegates the actual
-            export logic to the data model.
-            """
+        If the user confirms, the method delegates the actual
+        export logic to the data model.
+        """
 
         # Open a file dialog configured for saving JSON files
         with wx.FileDialog(
-                self,
-                "Export roles to JSON",
-                wildcard="JSON files (*.json)|*.json",
-                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+            self,
+            "Export roles to JSON",
+            wildcard="JSON files (*.json)|*.json",
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
         ) as file_dialog:
             # If the user cancels the dialog, abort the operation
             if file_dialog.ShowModal() == wx.ID_CANCEL:
@@ -618,19 +632,19 @@ class RoleEditorPanel(wx.Panel):
 
     def on_import(self, event):
         """
-           Handles the 'Import JSON' button click.
+        Handles the 'Import JSON' button click.
 
-           Opens a file open dialog that allows the user
-           to select a JSON file containing roles.
+        Opens a file open dialog that allows the user
+        to select a JSON file containing roles.
 
-           The panel delegates the actual import logic to the model.
+        The panel delegates the actual import logic to the model.
         """
         # Open a file dialog configured for loading JSON files
         with wx.FileDialog(
-                self,
-                "Import roles from JSON",
-                wildcard="JSON files (*.json)|*.json",
-                style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+            self,
+            "Import roles from JSON",
+            wildcard="JSON files (*.json)|*.json",
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
         ) as file_dialog:
 
             # Abort if user cancels
