@@ -1,9 +1,6 @@
 from dataclasses import dataclass
 from typing import Tuple
-import json
 from enum import StrEnum, IntEnum
-
-from scipy.stats import false_discovery_control
 
 
 class StudentGender(StrEnum):

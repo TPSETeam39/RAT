@@ -262,14 +262,12 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         if not name or self._normalize_name(name) in self._names_present:
             name = self._make_unique_default_name("Role")
 
-        role = Role(
-            id=rid,
-            name=name,
-            gender=role.gender,
-            group=role.group,
-            essential=role.essential,
-            priority=role.priority,
-        )
+        role = Role(id=rid,
+                    name=name,
+                    gender=role.gender,
+                    group=role.group,
+                    essential=role.essential,
+                    priority=role.priority)
         self.roles[rid] = role
 
         norm = self._normalize_name(role.name)
@@ -335,7 +333,7 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 "gender": role.gender.name,
                 "group": role.group,
                 "essential": role.essential,
-                "priority": role.priority,
+                "priority": role.priority
             }
             for role in self.roles.values()
         ]
@@ -376,7 +374,7 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                 gender=gender,
                 group=entry["group"],
                 essential=entry["essential"],
-                priority=entry["priority"],
+                priority=entry["priority"]
             )
 
             # Add role using existing validation logic
@@ -425,9 +423,7 @@ class RoleEditorPanel(wx.Panel):
         button_sizer.Add(button_add, 0, wx.RIGHT, 5)
 
         button_delete = wx.Button(self, id=wx.ID_DELETE, label="Delete")
-        button_sizer.Add(button_delete, 0)
-
-        top_sizer.Add(button_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+        button_sizer.Add(button_delete, 0, wx.RIGHT, 5)
 
         # Import / Export Buttons
         button_import = wx.Button(self, label="Import JSON")
