@@ -15,6 +15,7 @@ dependencies = [
     "pyinstaller>=6.18.0",
     "pytest>=9.0.2",
     "python-sat>=1.8.dev26",
+    "reportlab>=4.4.10",
     "scipy>=1.16.3",
     "wxpython>=4.2.4",
 ]
