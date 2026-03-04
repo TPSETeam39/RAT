@@ -15,10 +15,6 @@ class RoleGender(StrEnum):
     NON_BINARY = "NON-BINARY"
     NEUTRAL = "NEUTRAL"
 
-class Group_class(StrEnum):
-    ClassA = "classA"
-    ClassB = "classB"
-    Class= "class"
 
 STUDENT_TO_ROLE_GENDER_MAP = {
     StudentGender.FEMALE: RoleGender.FEMALE,
@@ -67,7 +63,7 @@ class Role:
     id: int
     name: str = "NONAME"
     gender: RoleGender = RoleGender.NEUTRAL
-    group: Group_class = Group_class.Class
+    group: str = "No Group"
     essential: bool = False
     priority: bool = False
 

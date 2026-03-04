@@ -34,11 +34,6 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
     NONE = "None"
     IMPORTANCE_CHOICES = [ESSENTIAL, PRIORITY, NONE]
 
-    ClassA = "classA"
-    ClassB = "classB"
-    Class = "class"
-    group_choices = [Class, ClassA, ClassB]
-
     def __init__(self, warn: Optional[Callable[[str], None]] = None):
         """
         Create a new role model.
@@ -476,11 +471,7 @@ class RoleEditorPanel(wx.Panel):
             )
         )
         self.dv.AppendColumn(
-            self.make_choice_column(
-                "Group",
-                RoleEditorDataViewModel.group_choices,
-                RoleEditorDataViewModel.COL_GROUP,
-            )
+            self.make_text_column("Group", RoleEditorDataViewModel.COL_GROUP)
         )
         self.dv.AppendColumn(
             self.make_choice_column(
