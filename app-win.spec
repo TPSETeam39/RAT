@@ -3,10 +3,10 @@
 
 a = Analysis(
     ['src\\rat\\app.py'],
-    pathex=['src/rat/ui', 'src/rat/role_assignment_calculator'],
+    pathex=['src'],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=['wx'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
