@@ -25,18 +25,21 @@ jobs:
       - name: Install dependencies
         run: pip install pyinstaller
 
+      # Build Linux/macOS executable
       - name: Build Linux/macOS executable
         if: matrix.os != 'windows-latest'
-        run: pyinstaller --onefile src/rat/app.py --distpath dist
+        run: pyinstaller --onefile src/rat/app.py --distpath dist/${{ matrix.os }} --paths src
         shell: bash
 
+      # Build Windows executable
       - name: Build Windows executable
         if: matrix.os == 'windows-latest'
-        run: pyinstaller app-win.spec --distpath dist
+        run: pyinstaller app-win.spec --distpath dist/${{ matrix.os }}
         shell: pwsh
 
+      # Upload artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ matrix.os }}
-          path: dist/
+          path: dist/${{ matrix.os }}
