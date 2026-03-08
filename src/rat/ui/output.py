@@ -80,7 +80,7 @@ class OutputPanel(wx.Panel):
         """
         group_root = self.list.AppendItem(self.list.RootItem, group_name)
 
-        for student, role in assignments.items():
+        for student, role in sorted(assignments.items(), key=lambda x: x[0].id):
             item = self.list.AppendItem(group_root, str(student.id))
             self.list.SetItemText(item, self.COL_LAST_NAME, student.last_name)
             self.list.SetItemText(item, self.COL_FIRST_NAME, student.first_name)

@@ -74,6 +74,19 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
         # id is incremented by one because 0 represents an invalid item
         return wx.dataview.DataViewItem(id + 1)
 
+    def _reassign_ids(self) -> None:
+        """
+        Reassigns student IDs sequentially from 0 after any addition or removal.
+        Updates _students and _next_id accordingly.
+        """
+        new_students: dict[int, Student] = {}
+        for new_id, student in enumerate(self._students.values()):
+            new_students[new_id] = replace(student, id=new_id)
+        self._students = new_students
+        self._next_id = len(self._students)
+
+        self.Cleared()
+
     def student_to_dv_item(self, student: Student) -> wx.dataview.DataViewItem:
         """
         Returns the DataViewItem representing the given student.
@@ -138,15 +151,21 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
 
         if student.id in self._students:
             raise Exception(f"student with id {student.id} already exists")
-        
-        if student.id >= self._next_id:
-            self._next_id = student.id + 1
 
-        self._students[student.id] = student
+        self._students[self._next_id] = student
 
         self.ItemAdded(self._ROOT_ITEM, self.student_to_dv_item(student))
+
         return student.id
-    
+
+    def _get_next_id(self) -> int:
+        """Return the smallest available student ID."""
+        used_ids = set(self._students.keys())
+        new_id = 0
+        while new_id in used_ids:
+            new_id += 1
+        return new_id
+
     def add_new_student(self) -> int:
         """
         Adds a new student, with default attributes, to the model.
@@ -154,10 +173,12 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
         :return: The ID of the added student.
         :rtype: int
         """
-        student = Student(self._next_id, StudentGender.NON_BINARY)
-        self._next_id += 1
-        
-        return self.add_student(student)
+        student_id = self._get_next_id()
+        student = Student(student_id, StudentGender.NON_BINARY)
+        self._students[student_id] =student
+        self.ItemAdded(self._ROOT_ITEM, self.student_to_dv_item(student))
+
+        return student_id
     
     def remove_student_by_id(self, id: int) -> None:
         """
@@ -175,6 +196,8 @@ class StudentInfoDataViewModel(wx.dataview.DataViewModel):
         del self._students[id]
 
         self.ItemDeleted(self._ROOT_ITEM, self.student_id_to_dv_item(id))
+
+        self._reassign_ids()
     
     def get_students_map(self) -> dict[int, Student]:
         """
