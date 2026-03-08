@@ -23,19 +23,19 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: |
-          pip install pyinstaller
+        run: pip install pyinstaller
 
-      - name: Build executable
-        run: |
-          if ( "${{ matrix.os }}" == "windows-latest" ){
-            echo "Building Windows EXE with spec"
-            pyinstaller app-win.spec
-            }
-          else{
-            echo "Building for Linux/macOS"
-            pyinstaller --onefile src/rat/app.py
-          }
+      # Windows build
+      - name: Build Windows executable
+        if: matrix.os == 'windows-latest'
+        run: pyinstaller app-win.spec
+        shell: pwsh
+
+      # Linux/macOS build
+      - name: Build Linux/macOS executable
+        if: matrix.os != 'windows-latest'
+        run: pyinstaller --onefile src/rat/app.py
+        shell: bash
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
