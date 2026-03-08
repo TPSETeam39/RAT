@@ -73,6 +73,30 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         """
         return name.casefold()
 
+    def _get_next_id(self) -> int:
+        """Return the smallest available student ID."""
+        used_ids = set(self.roles.keys())
+        new_id = 0
+        while new_id in used_ids:
+            new_id += 1
+        return new_id
+
+    def add_new_role(self) -> int:
+        """
+        Adds a new role with a unique ID and default values.
+
+        Returns the ID of the new role.
+        """
+        rid = self._get_next_id()
+        name = self._make_unique_default_name("Role")
+        role = Role(id=rid, name=name, gender=RoleGender.NEUTRAL)
+
+        self.roles[rid] = role
+        self._name_by_id[rid] = name
+        self._names_present.add(self._normalize_name(name))
+
+        self.ItemAdded(ROOT, self.role_to_dv_item(role))
+        return rid
     @override
     def IsContainer(self, item: wx.dataview.DataViewItem) -> bool:
         """
@@ -253,10 +277,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         """
         rid = role.id
         if rid in self.roles:
-            raise Exception(f"role with id {rid} already exists")
-
-        if rid >= self.next_id:
-            self.next_id = rid + 1
+            # Wenn ID existiert, nehme kleinste freie ID
+            rid = self._get_next_id()
+            role = Role(id=rid, name=role.name or "", gender=role.gender)
 
         name = (role.name or "").strip()
         if not name or self._normalize_name(name) in self._names_present:
@@ -269,9 +292,9 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
                     essential=role.essential,
                     priority=role.priority)
         self.roles[rid] = role
+        self._name_by_id[rid] = name
 
-        norm = self._normalize_name(role.name)
-        self._name_by_id[rid] = role.name
+        norm = self._normalize_name(name)
         self._names_present.add(norm)
 
         self.ItemAdded(ROOT, self.role_to_dv_item(role))
@@ -292,7 +315,28 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         if old is not None:
             self._names_present.discard(self._normalize_name(old))
 
-        self.ItemDeleted(ROOT, self.role_id_to_dv_item(rid))
+        # IDs neu zuweisen
+        new_roles = {}
+        new_name_by_id = {}
+
+        for new_id, role in enumerate(self.roles.values()):
+            new_role = Role(
+                id=new_id,
+                name=role.name,
+                gender=role.gender,
+                group=role.group,
+                essential=role.essential,
+                priority=role.priority
+            )
+
+            new_roles[new_id] = new_role
+            new_name_by_id[new_id] = role.name
+
+        self.roles = new_roles
+        self._name_by_id = new_name_by_id
+
+        # DataView komplett refreshen
+        self.Cleared()
 
     def get_roles_map(self) -> dict[int, Role]:
         """
@@ -352,24 +396,23 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        # Remove existing roles one by one
-        for rid in list(self.roles.keys()):
-            self.remove_role_by_id(rid)
 
-        # Clear internal caches and state
+        # reset all
         self.roles.clear()
         self._names_present.clear()
         self._name_by_id.clear()
-        self.next_id = 0
+
+        #dataview refresh
+        self.Cleared()
 
         # Recreate roles from imported JSON
-        for entry in data:
+        for i,entry in enumerate(data):
             # Convert stored string back to enum
             gender = RoleGender[entry["gender"]]
 
             # Create new Role object
             role = Role(
-                id=int(entry["id"]),
+                id=i,
                 name=entry["name"],
                 gender=gender,
                 group=entry["group"],
@@ -378,7 +421,12 @@ class RoleEditorDataViewModel(wx.dataview.DataViewModel):
             )
 
             # Add role using existing validation logic
-            self.add_role(role)
+            self.roles[i] = role
+
+            self._name_by_id[i] = role.name
+            self._names_present.add(self._normalize_name(role.name))
+
+            self.ItemAdded(ROOT, self.role_to_dv_item(role))
 
 class RoleEditorPanel(wx.Panel):
     """
@@ -537,9 +585,7 @@ class RoleEditorPanel(wx.Panel):
             self.dv.EditItem(item, column)
 
     def _add_role_and_begin_edit(self):
-        rid = self.add_role(
-            Role(id=self.model.next_id, name="Role", gender=RoleGender.NEUTRAL)
-        )
+        rid = self.model.add_new_role()
         self.dv.EditItem(
             self.model.role_id_to_dv_item(rid),
             self.dv.GetColumn(RoleEditorDataViewModel.COL_NAME),
