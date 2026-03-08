@@ -33,6 +33,7 @@ def _call_sat_solver(formula: CNFPlus) -> None | list[int]:
 
 class Calculator:
     def __init__(self, roles: set[Role], students: set[Student]):
+        self.reason_for_empty_assignment = ""
         self.roles = roles
         self.essential_roles = set([role for role in roles if role.essential == True])
         self.priority_roles = set([role for role in roles if role.priority == True])
@@ -81,8 +82,16 @@ class Calculator:
         return self.variable_pool.id(r)
 
     def calculate_role_assignments(self) -> dict[Student, Role]:
-        if self._trivially_unsatisfiable():
+        """
+        Calculate the role assignments, using the given students and roles.
+
+        If a valid role assignment could be calculated, returns a dictionary with all given students as
+          keys and their assigned roles as values. Otherwise, returns an empty dictionary.
+        """
+        trivial_reason = self._trivially_unsatisfiable()
+        if trivial_reason is not None:
             print("Role assignment could not be found: trivially unsatisfiable")
+            self.reason_for_empty_assignment = trivial_reason
             return {}
 
         last_optimal_assignment = _call_sat_solver(self._build_base_formula())
@@ -125,6 +134,16 @@ class Calculator:
 
         return self._interpret_model(last_optimal_assignment)
 
+    def get_reason_for_empty_assignment(self) -> str:
+        """
+        Returns the reason for the last call of calculate_role_assignments, which returned
+        an empty dictionary.
+
+        If the next call of calculate_role_assignments isn't an empty dictionary, then this function
+        would still return a non-empty string.
+        """
+        return self.reason_for_empty_assignment
+
     def _build_base_formula(self):
         formula = CNFPlus()
         self._every_student_has_exactly_one_role(formula)
@@ -134,34 +153,39 @@ class Calculator:
             self._enforce_essential_roles(formula)
         return formula
 
-    def _trivially_unsatisfiable(self):
+    def _trivially_unsatisfiable(self) -> str | None:
+        """
+        Checks whether an assignment is obviously impossible.
+
+        If it is, then the reason as a string is returned.
+        """
         if len(self.students) > len(self.roles):
-            return True
+            return "There are more students than roles."
         if self.essential_roles is not None:
             if len(self.essential_roles) > len(self.students):
-                return True
+                return "There are more essential roles than students."
             if not self._enough_students_to_play_essential_roles_with_gender(
                 RoleGender.MALE
             ):
-                return True
+                return "There are not enough students willing to play all male essential roles."
             if not self._enough_students_to_play_essential_roles_with_gender(
                 RoleGender.FEMALE
             ):
-                return True
+                return "There are not enough students willing to play all female essential roles."
             if not self._enough_students_to_play_essential_roles_with_gender(
                 RoleGender.NON_BINARY
             ):
-                return True
-        return False
+                return "There are not enough students willing to play all non-binary essential roles."
+        return None
 
     def _enough_students_to_play_essential_roles_with_gender(
         self, role_gender: RoleGender
     ):
-        return self._get_essential_roles_with_gender(
+        return self._count_essential_roles_with_gender(
             role_gender
         ) <= self._students_willing_to_play_role_with_gender(role_gender)
 
-    def _get_essential_roles_with_gender(self, role_gender):
+    def _count_essential_roles_with_gender(self, role_gender):
         return len([r for r in self.essential_roles if r.gender == role_gender])
 
     def _students_willing_to_play_role_with_gender(self, role_gender):

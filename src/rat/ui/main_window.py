@@ -90,7 +90,7 @@ class MainWindow(wx.Frame):
 
         if assignments == {}:
             wx.MessageBox(
-                "No valid role assignment could be found for the current students, roles and constraints.",
+                calc.reason_for_empty_assignment,
                 "Error",
                 wx.OK | wx.ICON_ERROR
             )
