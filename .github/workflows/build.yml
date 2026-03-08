@@ -23,8 +23,9 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install pyinstaller
-             pip install wxPython
+        run: |
+          pip install pyinstaller
+          pip install wxPython
              
       # Build Linux/macOS executable
       - name: Build Linux/macOS executable
