@@ -21,7 +21,13 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-
+          
+      - name: Install system deps for wxPython
+        run: sudo apt-get update && sudo apt-get install -y \
+             libgtk-3-dev libjpeg-dev libtiff-dev libsdl2-dev \
+             libgstreamer-plugins-base1.0-dev libnotify-dev \
+             freeglut3 freeglut3-dev libsm-dev libwebkit2gtk-4.0-dev
+      
       - name: Install dependencies
         run: |
           pip install pyinstaller
