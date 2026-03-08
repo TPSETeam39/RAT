@@ -24,7 +24,8 @@ jobs:
 
       - name: Install dependencies
         run: pip install pyinstaller
-
+             pip install wxPython
+             
       # Build Linux/macOS executable
       - name: Build Linux/macOS executable
         if: matrix.os != 'windows-latest'
